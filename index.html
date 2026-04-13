@@ -36,6 +36,8 @@
             border-bottom: 1px solid #334155;
             padding-bottom: 12px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         h1 {
             font-size: 1.6rem;
@@ -53,31 +55,81 @@
             border-radius: 20px;
             padding: 16px;
             margin-bottom: 14px;
-            transition: 0.2s;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        /* ✨ Золотая подсветка для рабочих прокси */
+        .proxy-card.working {
+            border-color: #facc15;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.25), inset 0 0 30px rgba(250, 204, 21, 0.05);
+            animation: goldPulse 2s infinite ease-in-out;
+        }
+        @keyframes goldPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.25), inset 0 0 30px rgba(250, 204, 21, 0.05); }
+            50% { box-shadow: 0 0 35px rgba(250, 204, 21, 0.45), inset 0 0 45px rgba(250, 204, 21, 0.12); }
+        }
+        .proxy-card.working::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #facc15, transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         .proxy-name {
             font-weight: 600;
             color: #facc15;
             word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        .proxy-name .flag { font-size: 1.2rem; }
         .proxy-details {
             font-size: 0.75rem;
             font-family: monospace;
             margin: 8px 0;
             word-break: break-all;
             color: #cbd5e1;
+            line-height: 1.5;
+        }
+        .proxy-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.7rem;
+            margin: 6px 0;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.85;
         }
         .status {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             font-size: 0.75rem;
-            padding: 4px 10px;
+            padding: 4px 12px;
             border-radius: 30px;
             margin-top: 8px;
+            font-weight: 500;
         }
         .status-working {
             background: #22c55e20;
             color: #4ade80;
             border: 1px solid #22c55e;
+        }
+        .status-slow {
+            background: #eab30820;
+            color: #facc15;
+            border: 1px solid #eab308;
         }
         .status-bad {
             background: #ef444420;
@@ -85,167 +137,166 @@
             border: 1px solid #ef4444;
         }
         .status-checking {
-            background: #eab30820;
-            color: #facc15;
-            border: 1px solid #eab308;
+            background: #64748b20;
+            color: #94a3b8;
+            border: 1px solid #64748b;
         }
         .btn-connect {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-top: 12px;
-            background: #0b7285;
-            padding: 8px 20px;
+            background: linear-gradient(135deg, #0b7285, #0e9a9e);
+            padding: 10px 24px;
             border-radius: 40px;
             text-decoration: none;
             color: white;
-            font-weight: 500;
-            font-size: 0.85rem;
-            transition: 0.2s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
         }
         .btn-connect:hover {
-            background: #0e8a9e;
-            transform: scale(1.02);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 154, 158, 0.4);
         }
+        .btn-connect:active { transform: translateY(0); }
         .footer {
             text-align: center;
             font-size: 0.7rem;
             margin-top: 24px;
             opacity: 0.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .refresh-btn:hover {
+            border-color: #64748b;
+            color: #e2e8f0;
         }
         .loader {
             text-align: center;
             padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
         }
+        .loader-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #334155;
+            border-top-color: #facc15;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .error {
             background: #7f1d1d;
             padding: 16px;
             border-radius: 20px;
             text-align: center;
+            border: 1px solid #ef4444;
+        }
+        .next-update {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 8px;
+        }
+        @media (max-width: 600px) {
+            .header { flex-direction: column; align-items: center; }
+            .proxy-meta { flex-direction: column; gap: 4px; }
         }
     </style>
 </head>
 <body>
 <div class="container" id="app">
-    <div class="loader">🔄 Загрузка списка прокси и проверка работоспособности...</div>
+    <div class="loader">
+        <div class="loader-spinner"></div>
+        <div>🔄 Загрузка проверенных прокси...</div>
+    </div>
 </div>
 
 <script>
-    const VERSION = "1.0.0";
+    const VERSION = "2.0.0";
     const language = navigator.language || "ru";
     const isRussian = language.startsWith("ru");
+    const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 час
 
-    // Текст в зависимости от языка
     const text = {
-        title: isRussian ? "MTProto прокси для Telegram" : "MTProto proxies for Telegram",
-        sub: isRussian ? "Проверка работоспособности в реальном времени" : "Real-time availability check",
+        title: isRussian ? "🔐 MTProto прокси для Telegram" : "🔐 MTProto proxies for Telegram",
+        sub: isRussian ? "Автоматически проверенные рабочие прокси" : "Auto-verified working proxies",
         working: isRussian ? "✅ Работает" : "✅ Working",
-        notWorking: isRussian ? "❌ Не работает" : "❌ Not working",
+        slow: isRussian ? "⚠️ Медленный" : "⚠️ Slow",
+        notWorking: isRussian ? "❌ Не работает" : "❌ Offline",
         checking: isRussian ? "⏳ Проверка..." : "⏳ Checking...",
-        connect: isRussian ? "Подключить в Telegram" : "Connect in Telegram",
-        footer: isRussian ? "Прокси загружены из публичных источников и проверены автоматически" : "Proxies from public sources, automatically checked"
+        connect: isRussian ? "🚀 Подключить в Telegram" : "🚀 Connect in Telegram",
+        footer: isRussian ? "Прокси из надёжного источника • Автообновление каждый час" : "Proxies from verified source • Auto-refresh every hour",
+        nextUpdate: isRussian ? "След. обновление через" : "Next update in",
+        refresh: isRussian ? "🔄 Обновить сейчас" : "🔄 Refresh now",
+        error: isRussian ? "❌ Не удалось загрузить прокси" : "❌ Failed to load proxies"
     };
 
-    // Создание tg:// ссылки
     function makeTgLink(server, port, secret) {
         return `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`;
     }
 
-    // Парсинг строки (поддерживает tg:// и https://t.me/proxy)
-    function parseProxyLine(line) {
-        let tgLink = null;
-        let match = line.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&]+)/);
-        if (match) {
-            tgLink = match[0];
-        } else {
-            match = line.match(/https?:\/\/t\.me\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&]+)/);
-            if (match) {
-                const url = new URL(match[0]);
-                const server = url.searchParams.get('server');
-                const port = url.searchParams.get('port');
-                const secret = url.searchParams.get('secret');
-                if (server && port && secret) {
-                    tgLink = `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`;
-                }
-            }
-        }
-        if (tgLink) {
-            const finalMatch = tgLink.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&]+)/);
-            if (finalMatch) {
-                return {
-                    server: decodeURIComponent(finalMatch[1]),
-                    port: finalMatch[2],
-                    secret: decodeURIComponent(finalMatch[3]),
-                    rawLink: tgLink
-                };
-            }
-        }
-        return null;
-    }
-
-    // Проверка одного прокси через fetch с таймаутом (реальная проверка)
-    async function checkProxyAlive(proxy) {
-        const url = `https://${proxy.server}/api`; // стандартный эндпоинт Telegram MTProto
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 секунды таймаут
+    // 🎯 Получение прокси из проверенного API
+    async function fetchVerifiedProxies() {
+        const API_URL = "https://www.mtproto.shop/api/proxies.json";
         try {
-            // Используем HEAD запрос с mode: 'no-cors' — это не даст ответ, но мы поймём, что сервер отвечает
-            // Однако для реальной проверки лучше попробовать fetch с режимом 'cors' — но многие прокси не разрешают CORS.
-            // Альтернатива: просто проверить, что хост доступен через Image? Но это ненадёжно.
-            // Более точный способ: отправить запрос к Telegram API через прокси (но из браузера сложно).
-            // Сделаем простую проверку: пытаемся загрузить favicon.ico с таймаутом.
-            const img = new Image();
-            const imgPromise = new Promise((resolve) => {
-                img.onload = () => resolve(true);
-                img.onerror = () => resolve(false);
-                img.src = `https://${proxy.server}/favicon.ico?t=${Date.now()}`;
-                setTimeout(() => {
-                    img.src = '';
-                    resolve(false);
-                }, 4000);
-            });
-            const result = await imgPromise;
-            clearTimeout(timeoutId);
-            return result;
+            const resp = await fetch(API_URL, { cache: "no-store" });
+            if (!resp.ok) throw new Error("API error");
+            const data = await resp.json();
+            const proxies = Array.isArray(data) ? data : (data.proxies || []);
+            
+            // Фильтруем только онлайн/медленные, сортируем по пингу
+            return proxies
+                .filter(p => p.status === "online" || p.status === "slow")
+                .sort((a, b) => {
+                    const pingA = parseInt(a.ping) || 999;
+                    const pingB = parseInt(b.ping) || 999;
+                    return pingA - pingB;
+                })
+                .slice(0, 15); // Берём топ-15 по скорости
         } catch (e) {
-            clearTimeout(timeoutId);
-            return false;
+            console.warn("API fetch failed:", e);
+            return [];
         }
     }
 
-    // Загрузка прокси из нескольких источников
-    async function fetchProxiesFromSources() {
-        const sources = [
-            "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt",
-            "https://raw.githubusercontent.com/Grim1313/mtproto-for-telegram/master/all_proxies.txt",
-            "https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt",
-            "https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_eu.txt"
-        ];
-        let allProxies = [];
-        for (const url of sources) {
-            try {
-                const resp = await fetch(url);
-                if (!resp.ok) continue;
-                const text = await resp.text();
-                const lines = text.split("\n");
-                for (const line of lines) {
-                    const p = parseProxyLine(line.trim());
-                    if (p && !allProxies.some(ex => ex.server === p.server && ex.port === p.port)) {
-                        allProxies.push(p);
-                    }
-                    if (allProxies.length >= 30) break;
-                }
-                if (allProxies.length >= 10) break; // достаточно 10 кандидатов для проверки
-            } catch(e) { console.warn(e); }
-        }
-        return allProxies.slice(0, 15);
+    function formatPing(pingStr) {
+        if (!pingStr) return "";
+        const num = parseInt(pingStr);
+        if (num < 100) return `🟢 ${pingStr}`;
+        if (num < 200) return `🟡 ${pingStr}`;
+        return `🔴 ${pingStr}`;
     }
 
-    // Отображение карточек с прогрессом проверки
-    function renderCheckingList(proxies) {
-        const updateTime = new Date();
-        const formattedDate = updateTime.toLocaleString(isRussian ? "ru-RU" : "en-GB", {
+    function formatSpeed(speed) {
+        const map = { "Fast": "⚡", "Medium": "🟡", "Slow": "🐌" };
+        return map[speed] || "";
+    }
+
+    function renderProxies(proxies, lastUpdate) {
+        const formattedDate = new Date(lastUpdate).toLocaleString(isRussian ? "ru-RU" : "en-GB", {
             day: "2-digit", month: "2-digit", year: "numeric",
-            hour: "2-digit", minute: "2-digit", second: "2-digit"
+            hour: "2-digit", minute: "2-digit"
         });
+
         let html = `
             <div class="header">
                 <div class="version">v${VERSION}</div>
@@ -254,59 +305,98 @@
             <h1>${text.title}</h1>
             <div class="sub">${text.sub}</div>
         `;
-        for (let i = 0; i < proxies.length; i++) {
-            const p = proxies[i];
-            html += `
-                <div class="proxy-card" id="proxy-card-${i}">
-                    <div class="proxy-name">🔹 ${p.server}</div>
-                    <div class="proxy-details">${p.server}:${p.port}<br>Secret: ${p.secret.substring(0, 20)}...</div>
-                    <div class="status status-checking" id="status-${i}">${text.checking}</div>
-                    <div id="btn-${i}" style="margin-top: 10px;"></div>
-                </div>
-            `;
-        }
-        html += `<div class="footer">${text.footer}</div>`;
-        document.getElementById("app").innerHTML = html;
-        return proxies;
-    }
 
-    // Обновление статуса для конкретного прокси
-    function updateProxyStatus(index, isAlive, proxy) {
-        const statusDiv = document.getElementById(`status-${index}`);
-        const btnDiv = document.getElementById(`btn-${index}`);
-        if (!statusDiv) return;
-        if (isAlive) {
-            statusDiv.className = "status status-working";
-            statusDiv.innerHTML = text.working;
-            btnDiv.innerHTML = `<a class="btn-connect" href="${proxy.rawLink}" target="_blank">${text.connect}</a>`;
+        if (proxies.length === 0) {
+            html += `<div class="error">${text.error}</div>`;
         } else {
-            statusDiv.className = "status status-bad";
-            statusDiv.innerHTML = text.notWorking;
-            btnDiv.innerHTML = `<span style="font-size:0.75rem; opacity:0.5;">${text.notWorking}</span>`;
+            for (const p of proxies) {
+                const isWorking = p.status === "online";
+                const isSlow = p.status === "slow";
+                const cardClass = isWorking ? "proxy-card working" : "proxy-card";
+                const statusClass = isWorking ? "status-working" : (isSlow ? "status-slow" : "status-bad");
+                const statusText = isWorking ? text.working : (isSlow ? text.slow : text.notWorking);
+                const connectBtn = isWorking || isSlow 
+                    ? `<a class="btn-connect" href="${p.link || makeTgLink(p.server, p.port, p.secret)}" target="_blank">${text.connect}</a>`
+                    : "";
+                
+                html += `
+                    <div class="${cardClass}">
+                        <div class="proxy-name">
+                            <span class="flag">${p.flag || "🌐"}</span>
+                            ${p.location || p.server}
+                        </div>
+                        <div class="proxy-details">
+                            ${p.domain || p.server}:${p.port}<br>
+                            <span style="opacity:0.7">Secret: ${p.secret.substring(0, 16)}...</span>
+                        </div>
+                        <div class="proxy-meta">
+                            ${p.ping ? `<span class="meta-item">📡 ${formatPing(p.ping)}</span>` : ""}
+                            ${p.speed ? `<span class="meta-item">${formatSpeed(p.speed)} ${p.speed}</span>` : ""}
+                        </div>
+                        <div class="status ${statusClass}">● ${statusText}</div>
+                        ${connectBtn}
+                    </div>
+                `;
+            }
+        }
+
+        const nextUpdate = new Date(Date.now() + REFRESH_INTERVAL_MS);
+        html += `
+            <div class="next-update">${text.nextUpdate}: <span id="countdown">${formatCountdown(nextUpdate)}</span></div>
+            <div class="footer">
+                ${text.footer}
+                <button class="refresh-btn" onclick="manualRefresh()">${text.refresh}</button>
+            </div>
+        `;
+        document.getElementById("app").innerHTML = html;
+    }
+
+    function formatCountdown(targetDate) {
+        const diff = targetDate - Date.now();
+        if (diff <= 0) return "00:00";
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    function startCountdown(targetDate) {
+        const el = document.getElementById("countdown");
+        if (!el) return;
+        const interval = setInterval(() => {
+            const text = formatCountdown(targetDate);
+            if (el) el.textContent = text;
+            if (Date.now() >= targetDate) {
+                clearInterval(interval);
+                manualRefresh();
+            }
+        }, 1000);
+    }
+
+    async function loadAndRender() {
+        document.getElementById("app").innerHTML = `
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <div>🔍 Получение проверенных прокси...</div>
+            </div>`;
+        
+        const proxies = await fetchVerifiedProxies();
+        renderProxies(proxies, new Date());
+        
+        if (proxies.length > 0) {
+            const nextUpdate = new Date(Date.now() + REFRESH_INTERVAL_MS);
+            startCountdown(nextUpdate);
         }
     }
 
-    // Главная функция
-    async function main() {
-        // Показываем загрузку
-        document.getElementById("app").innerHTML = `<div class="loader">🔍 Получение списка прокси...</div>`;
-        const proxies = await fetchProxiesFromSources();
-        if (!proxies.length) {
-            document.getElementById("app").innerHTML = `<div class="error">❌ Не удалось загрузить ни одного прокси. Проверьте соединение или перезагрузите страницу.</div>`;
-            return;
-        }
-        // Рисуем карточки в режиме проверки
-        renderCheckingList(proxies);
-        // Запускаем параллельную проверку каждого
-        const checkPromises = proxies.map((proxy, idx) => checkProxyAlive(proxy).then(alive => ({ idx, alive, proxy })));
-        const results = await Promise.all(checkPromises);
-        for (const res of results) {
-            updateProxyStatus(res.idx, res.alive, res.proxy);
-        }
+    function manualRefresh() {
+        loadAndRender();
     }
 
-    // Запуск
-    main();
+    // 🔄 Автозапуск + периодическое обновление
+    document.addEventListener("DOMContentLoaded", () => {
+        loadAndRender();
+        setInterval(loadAndRender, REFRESH_INTERVAL_MS);
+    });
 </script>
 </body>
 </html>
