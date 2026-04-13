@@ -1,8 +1,8 @@
 name: Update Proxies
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Запуск каждые 10 минут
-  workflow_dispatch:        # Ручной запуск по кнопке в Actions
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # ⚡ Кнопка ручного запуска в Actions
 
 jobs:
   update:
@@ -12,45 +12,50 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Fetch & Parse Telegram Channel
+      - name: Fetch Telegram Channel
         run: |
-          curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "https://t.me/s/ProxyFree_Ru" > page.html
+          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            -H "Accept: text/html,application/xhtml+xml" \
+            -H "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8" \
+            "https://t.me/s/ProxyFree_Ru" > page.html || echo "Curl failed"
+            
+      - name: Parse & Save JSON
+        run: |
           python3 << 'PYEOF'
-          import re, json, sys
-          try:
-              with open("page.html", "r", encoding="utf-8") as f: html = f.read()
-          except Exception as e:
-              print(f"Error: {e}", file=sys.stderr); sys.exit(1)
-              
-          proxies = []
-          seen = set()
+          import re, json, sys, os
           
-          blocks = html.split('<div class="tgme_widget_message')
-          for b in blocks:
-              servers = re.findall(r'Server\s*[:：]?\s*`?([a-zA-Z0-9.\-]+)`?', b)
-              ports = re.findall(r'Port\s*[:：]?\s*`?(\d+)`?', b)
-              secrets = re.findall(r'Secret\s*[:：]?\s*`?([A-Za-z0-9_+\-/=]+)`?', b)
-              flags = re.findall(r'(🇷🇺|🇺🇸|🇩🇪|🇳🇱|🇫🇷|🇬🇧|🇫🇮|🇵🇱|🇸🇬|🇯🇵|🇮🇳|🇨🇦|🇦🇺|🇧🇷|🇹🇷|🇮🇷|🇦🇪|🇮🇱|🇸🇪|🇳🇴|🇨🇿|🇱🇻|🇱🇹|🇪🇪|🇰🇿|🇺🇿|🇲🇩|🇧🇾|🇬🇪|🇦🇲|🇦🇿|🇻🇳|🇹🇭|🇲🇾)', b)
+          html_path = "page.html"
+          if not os.path.exists(html_path) or os.path.getsize(html_path) < 100:
+              print("⚠️ Page not loaded or empty. Using fallback.")
+              proxies = []
+          else:
+              with open(html_path, "r", encoding="utf-8") as f: html = f.read()
+              proxies = []
+              seen = set()
               
-              for i in range(min(len(servers), len(ports), len(secrets))):
-                  key = f"{servers[i]}:{ports[i]}"
-                  if key not in seen and servers[i].lower() != "unknown" and len(servers[i]) > 3:
-                      seen.add(key)
-                      proxies.append({
-                          "type": "MTProto",
-                          "server": servers[i],
-                          "port": ports[i],
-                          "secret": secrets[i],
-                          "flag": flags[0] if flags else ("🇷🇺" if ".ru" in servers[i] else "🌐"),
-                          "raw": f"tg://proxy?server={servers[i]}&port={ports[i]}&secret={secrets[i]}"
-                      })
+              for b in html.split('<div class="tgme_widget_message'):
+                  s = re.findall(r'Server\s*[:：]?\s*`?([a-zA-Z0-9.\-]+)`?', b)
+                  p = re.findall(r'Port\s*[:：]?\s*`?(\d+)`?', b)
+                  sc = re.findall(r'Secret\s*[:：]?\s*`?([A-Za-z0-9_+\-/=]+)`?', b)
+                  fl = re.findall(r'(🇷🇺|🇺🇸|🇩🇪|🇳🇱|🇫🇷|🇬🇧|🇫🇮|🇺🇦|🇵🇱|🇸🇬|🇯🇵|🇮🇳|🇨🇦|🇦🇺|🇧🇷|🇹🇷|🇮🇷|🇦🇪|🇮🇱|🇸🇪|🇳🇴|🇨🇿|🇱🇻|🇱🇹|🇪🇪|🇰🇿|🇺🇿|🇲🇩|🇧🇾|🇬🇪|🇦🇲|🇦🇿|🇻🇳|🇹🇭|🇲🇾)', b)
+                  
+                  for i in range(min(len(s), len(p), len(sc))):
+                      key = f"{s[i]}:{p[i]}"
+                      if key not in seen and s[i].lower() != "unknown" and len(s[i]) > 3:
+                          seen.add(key)
+                          proxies.append({
+                              "type": "MTProto", "server": s[i], "port": p[i], "secret": sc[i],
+                              "flag": fl[0] if fl else ("🇷🇺" if ".ru" in s[i] else "🌐"),
+                              "raw": f"tg://proxy?server={s[i]}&port={p[i]}&secret={sc[i]}"
+                          })
           
-          # Фоллбэк если мало прокси
-          if len(proxies) < 4:
+          # Фоллбэк если Telegram заблокировал или прокси не нашлись
+          if len(proxies) < 3:
               for fb in [
                   {"server":"185.173.36.38","port":"443","secret":"eeRighJJvXrFGRMCIMJdCQ","flag":"🇳🇱"},
                   {"server":"91.107.255.159","port":"8443","secret":"eeNEgYdJvXrFGRMCIMJdCQ","flag":"🇩🇪"},
-                  {"server":"65.109.153.70","port":"8443","secret":"1320PuNyHw_LQKT_Y7XNJw","flag":"🇫🇮"}
+                  {"server":"65.109.153.70","port":"8443","secret":"1320PuNyHw_LQKT_Y7XNJw","flag":"🇫🇮"},
+                  {"server":"51.15.246.20","port":"8443","secret":"eeNEgYdJvXrFGRMCIMJdCQ","flag":"🇫🇷"}
               ]:
                   k = f"{fb['server']}:{fb['port']}"
                   if k not in seen:
@@ -59,10 +64,9 @@ jobs:
                           "raw": f"tg://proxy?server={fb['server']}&port={fb['port']}&secret={fb['secret']}"
                       })
           
-          # Сохраняем топ-20 (сайт покажет 12)
-          with open("proxies.json", "w", encoding="utf-8") as f:
-              json.dump({"success": True, "count": len(proxies), "proxies": proxies[:20]}, f, indent=2, ensure_ascii=False)
-          print(f"✅ Saved {min(len(proxies), 20)} proxies")
+          out = {"success": True, "count": len(proxies), "proxies": proxies[:15]}
+          with open("proxies.json", "w", encoding="utf-8") as f: json.dump(out, f, indent=2, ensure_ascii=False)
+          print(f"✅ Saved {len(proxies)} proxies to proxies.json")
           PYEOF
           
       - name: Commit & Push
@@ -70,5 +74,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add proxies.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Auto-update proxies ($(date '+%H:%M'))"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Update proxies $(date '+%Y-%m-%d %H:%M')"
           git push
