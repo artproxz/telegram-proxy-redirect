@@ -32,7 +32,6 @@
         .ping-good { background: #22c55e20; color: #4ade80; }
         .ping-mid { background: #eab30820; color: #facc15; }
         .ping-pending { background: #64748b20; color: #94a3b8; }
-        .ping-na { background: #475569; color: #94a3b8; }
         
         .btn { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 0.85rem; transition: 0.15s; }
         .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
@@ -44,7 +43,6 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .error-msg { background: #450a0a; border: 1px solid #7f1d1d; padding: 10px; border-radius: 10px; text-align: center; color: #fca5a5; font-size: 0.8rem; margin-bottom: 12px; }
         .fallback-badge { background: #78350f; color: #facc15; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
-        .debug-info { text-align: center; font-size: 0.7rem; color: #475569; margin: 8px 0; }
         
         .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 12px rgba(16,185,129,0.4); transform: translateX(120%); opacity: 0; transition: 0.4s; display: flex; align-items: center; gap: 10px; }
         .toast.show { transform: translateX(0); opacity: 1; }
@@ -56,17 +54,15 @@
 <div class="container" id="app"><div class="loader"><div class="spinner"></div>Загрузка...</div></div>
 
 <script>
-    // ⚠️⚠️⚠️ ВАЖНО: ВСТАВЬ СЮДА СВОЙ URL CLOUDFLARE WORKER ⚠️⚠️⚠️
-    // Пример: "https://my-proxy-worker.myname.workers.dev"
-    const WORKER_URL = "https://tg-proxy-fetcher.nevien19.workers.dev"; // ← ЗАМЕНИ ЭТО
+    const WORKER_URL = "https://tg-proxy-fetcher.nevien19.workers.dev";
     
     const CONFIG = {
         WORKER_URL: WORKER_URL + "/?pages=5&days=7",
         REFRESH_MS: 600000,
         PING_INTERVAL: 15000,
         MAX_PROXIES: 12,
-        TIMER_KEY: "tg_tmr_v224",
-        USED_KEY: "tg_used_v224",
+        TIMER_KEY: "tg_tmr_v227",
+        USED_KEY: "tg_used_v227",
         FALLBACK: [
             {type:"MTProto",server:"185.173.36.38",port:"443",secret:"eeRighJJvXrFGRMCIMJdCQ",flag:"🇳🇱",raw:"tg://proxy?server=185.173.36.38&port=443&secret=eeRighJJvXrFGRMCIMJdCQ"},
             {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩🇪",raw:"tg://proxy?server=91.107.255.159&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"},
@@ -74,29 +70,28 @@
             {type:"MTProto",server:"51.15.246.20",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇫🇷",raw:"tg://proxy?server=51.15.246.20&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"},
             {type:"MTProto",server:"149.154.167.91",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.167.91&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
             {type:"MTProto",server:"149.154.167.103",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.167.103&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-            {type:"MTProto",server:"149.154.167.92",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.167.92&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
+            {type:"MTProto",server:"149.154.167.92",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬",raw:"tg://proxy?server=149.154.167.92&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
             {type:"MTProto",server:"149.154.167.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.167.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
             {type:"MTProto",server:"149.154.171.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.171.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-            {type:"MTProto",server:"149.154.175.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.175.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-            {type:"MTProto",server:"149.154.175.102",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.175.102&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-            {type:"MTProto",server:"149.154.167.200",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧",raw:"tg://proxy?server=149.154.167.200&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"}
+            {type:"MTProto",server:"149.154.175.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬",raw:"tg://proxy?server=149.154.175.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
+            {type:"MTProto",server:"149.154.175.102",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬",raw:"tg://proxy?server=149.154.175.102&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
+            {type:"MTProto",server:"149.154.167.200",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬",raw:"tg://proxy?server=149.154.167.200&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"}
         ]
     };
 
-    let state = { proxies: [], timer: null, pingTimer: null, usingFallback: false, lastError: null };
+    let state = { proxies: [], timer: null, pingTimer: null, usingFallback: false };
 
     const getTarget = () => {
         try {
             const raw = localStorage.getItem(CONFIG.TIMER_KEY);
             const parsed = raw ? parseInt(raw, 10) : null;
             if (parsed && parsed > Date.now()) return parsed;
-        } catch(e) { console.warn("Timer read error:", e); }
+        } catch(e) {}
         return Date.now() + CONFIG.REFRESH_MS;
     };
     
     const setTarget = (t) => {
-        try { localStorage.setItem(CONFIG.TIMER_KEY, String(t)); } 
-        catch(e) { console.warn("Timer write error:", e); }
+        try { localStorage.setItem(CONFIG.TIMER_KEY, String(t)); } catch(e) {}
     };
 
     const getUsed = () => { 
@@ -108,65 +103,53 @@
         try { 
             const s = getUsed(); s.add(k); 
             localStorage.setItem(CONFIG.USED_KEY, JSON.stringify([...s])); 
-        } catch(e) { console.warn("Used mark error:", e); } 
+        } catch(e) {} 
     };
     
     const isUsed = (k) => getUsed().has(k);
 
     const notify = (msg) => {
-        try {
-            const t = document.createElement("div");
-            t.className = "toast";
-            t.innerHTML = `<span>✨ ${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
-            document.body.appendChild(t);
-            requestAnimationFrame(() => t.classList.add("show"));
-            setTimeout(() => { if(t.parentNode) t.remove(); }, 8000);
-        } catch(e) { console.log("Toast:", msg); }
-    };
-
-    // 🔕 MTProto не поддерживает HTTP-пинг — возвращаем статус "проверка"
-    const checkPing = async (server, port) => {
-        // Возвращаем null — покажем "🟢" как индикатор "проверено вручную"
-        return null;
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.innerHTML = `<span>✨ ${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
+        document.body.appendChild(t);
+        requestAnimationFrame(() => t.classList.add("show"));
+        setTimeout(() => { if(t.parentNode) t.remove(); }, 8000);
     };
 
     const updateProxies = async (force = false) => {
-        console.log("🔄 updateProxies called, force:", force);
+        console.log("🔄 Обновление прокси, force:", force);
+        
         const target = getTarget();
         const shouldRefresh = force || (target <= Date.now());
         let errorMsg = null, usedFallback = false;
 
         if (shouldRefresh) {
             try {
-                console.log("📡 Fetching:", CONFIG.WORKER_URL);
+                console.log("📡 Запрос:", CONFIG.WORKER_URL);
                 const controller = new AbortController();
-                const timeout = setTimeout(() => {
-                    console.warn("⏱️ Fetch timeout");
-                    controller.abort();
-                }, 8000);
+                const timeout = setTimeout(() => controller.abort(), 8000);
                 
                 const res = await fetch(CONFIG.WORKER_URL, { 
                     cache: "no-store", 
-                    signal: controller.signal,
-                    headers: { 'Accept': 'application/json' }
+                    signal: controller.signal 
                 });
                 clearTimeout(timeout);
                 
-                console.log("📥 Response status:", res.status);
+                console.log("📥 Статус:", res.status);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 
                 const data = await res.json();
-                console.log("📦 Response data:", { success: data.success, count: data.proxies?.length });
+                console.log("📦 Получено:", data);
                 
                 if (data.success && data.proxies?.length >= 3) {
                     const valid = data.proxies.filter(p => 
                         p.server && p.server !== "Unknown" && p.port && p.secret?.length > 10
                     );
-                    const oldKeys = new Set(state.proxies.map(p => p.key));
                     const newProxies = valid.slice(0, CONFIG.MAX_PROXIES);
                     
-                    const added = newProxies.filter(p => !oldKeys.has(`${p.server}:${p.port}`));
-                    if (added.length > 0) notify(`+${added.length} новых прокси`);
+                    const added = newProxies.filter(p => !isUsed(`${p.server}:${p.port}`));
+                    if (added.length > 0) notify(`+${added.length} новых`);
                     
                     state.proxies = newProxies.map(p => ({ 
                         ...p, 
@@ -175,14 +158,12 @@
                         fromFallback: false 
                     }));
                     state.usingFallback = false;
-                    state.lastError = null;
                 } else {
                     throw new Error(`Мало прокси: ${data.proxies?.length || 0}`);
                 }
             } catch (e) {
-                console.warn("❌ Worker fetch error:", e.message);
-                state.lastError = e.message;
-                errorMsg = "Не удалось загрузить прокси. Показываем резерв.";
+                console.warn("❌ Ошибка:", e.message);
+                errorMsg = "Не удалось загрузить. Показываем резерв.";
                 
                 state.proxies = CONFIG.FALLBACK.slice(0, CONFIG.MAX_PROXIES).map(p => ({ 
                     ...p, 
@@ -228,7 +209,6 @@
             for (const p of state.proxies) {
                 const el = document.getElementById(`ping-${p.key}`);
                 if (!el) continue;
-                // MTProto: показываем "🟢" как заглушку
                 el.className = "ping-badge ping-good";
                 el.textContent = "🟢";
                 await new Promise(r => setTimeout(r, 200));
@@ -242,7 +222,7 @@
         const sorted = [...state.proxies].sort((a,b) => a.used - b.used).slice(0, CONFIG.MAX_PROXIES);
         let html = `
             <div class="header">
-                <div class="version">v2.2.4</div>
+                <div class="version">v2.2.7</div>
                 <div class="stats">
                     📡 ${sorted.length}
                     ${usedFallback ? '<span class="fallback-badge">резерв</span>' : ''}
@@ -251,7 +231,6 @@
             <h1>MTProto для Telegram</h1>
             <div class="sub">Источник: @ProxyFree_Ru • Автообновление 10 мин</div>
             ${error ? `<div class="error-msg">${error}</div>` : ""}
-            ${state.lastError ? `<div class="debug-info">Диагностика: ${state.lastError}</div>` : ""}
         `;
         
         sorted.forEach(p => {
@@ -270,7 +249,7 @@
         });
         
         if (sorted.length === 0 && !error) {
-            html += `<div class="loader"><div class="spinner"></div>Ожидание прокси...</div>`;
+            html += `<div class="loader"><div class="spinner"></div>Ожидание...</div>`;
         }
         html += `<div class="footer">Обновление через: <span id="countdown">--:--</span></div>`;
         document.getElementById("app").innerHTML = html;
@@ -278,55 +257,26 @@
     };
 
     window.connectProxy = (raw) => {
-        try {
-            const m = raw.match(/server=([^&]+)&port=(\d+)/);
-            if (m) {
-                markUsed(`${m[1]}:${m[2]}`);
-                const card = document.querySelector(`.proxy-card[data-key="${m[1]}:${m[2]}"]`);
-                if (card) {
-                    card.classList.add("used");
-                    const btn = card.querySelector(".btn");
-                    if (btn) { 
-                        btn.textContent = "✓"; 
-                        setTimeout(() => { if(btn) btn.textContent = "Подключить"; }, 1000); 
-                    }
+        const m = raw.match(/server=([^&]+)&port=(\d+)/);
+        if (m) {
+            markUsed(`${m[1]}:${m[2]}`);
+            const card = document.querySelector(`.proxy-card[data-key="${m[1]}:${m[2]}"]`);
+            if (card) {
+                card.classList.add("used");
+                const btn = card.querySelector(".btn");
+                if (btn) { 
+                    btn.textContent = "✓"; 
+                    setTimeout(() => { if(btn) btn.textContent = "Подключить"; }, 1000); 
                 }
             }
-            location.href = raw;
-        } catch(e) { console.error("Connect error:", e); }
+        }
+        location.href = raw;
     };
 
-    // 🚀 Старт с обработкой ошибок
     document.addEventListener("DOMContentLoaded", () => {
-        console.log("🎬 App initialized");
-        try {
-            const target = getTarget();
-            if (target <= Date.now()) {
-                updateProxies(true);
-            } else {
-                if (state.proxies.length === 0) {
-                    updateProxies(false).catch(e => {
-                        console.warn("Initial load fallback:", e);
-                        state.proxies = CONFIG.FALLBACK.slice(0, CONFIG.MAX_PROXIES).map(p => ({ 
-                            ...p, key: `${p.server}:${p.port}`, used: isUsed(`${p.server}:${p.port}`), fromFallback: true 
-                        }));
-                        render("Используем резервный список", true);
-                    });
-                } else {
-                    render();
-                }
-            }
-            startCountdown();
-        } catch(e) {
-            console.error("🚨 Critical error:", e);
-            document.getElementById("app").innerHTML = 
-                `<div class="error-msg">Ошибка загрузки: ${e.message}<br><small>Смотрите консоль (F12)</small></div>`;
-        }
-    });
-    
-    // Глобальный обработчик ошибок для отладки
-    window.addEventListener('error', (e) => {
-        console.error("Global error:", e.message, "at", e.filename + ":" + e.lineno);
+        console.log("✅ Приложение запущено");
+        console.log("🔗 Worker URL:", CONFIG.WORKER_URL);
+        updateProxies(true);
     });
 </script>
 </body>
