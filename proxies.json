@@ -1,20 +1,104 @@
 {
   "success": true,
   "count": 12,
-  "timestamp": "2025-01-01T00:00:00.000Z",
+  "timestamp": "2026-04-13T18:47:47.775Z",
   "proxies": [
-    {"type":"MTProto","server":"185.173.36.38","port":"443","secret":"eeRighJJvXrFGRMCIMJdCQ","flag":"🇳🇱","raw":"tg://proxy?server=185.173.36.38&port=443&secret=eeRighJJvXrFGRMCIMJdCQ"},
-    {"type":"MTProto","server":"91.107.255.159","port":"8443","secret":"eeNEgYdJvXrFGRMCIMJdCQ","flag":"🇩🇪","raw":"tg://proxy?server=91.107.255.159&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"},
-    {"type":"MTProto","server":"65.109.153.70","port":"8443","secret":"1320PuNyHw_LQKT_Y7XNJw","flag":"🇫🇮","raw":"tg://proxy?server=65.109.153.70&port=8443&secret=1320PuNyHw_LQKT_Y7XNJw"},
-    {"type":"MTProto","server":"51.15.246.20","port":"8443","secret":"eeNEgYdJvXrFGRMCIMJdCQ","flag":"🇫","raw":"tg://proxy?server=51.15.246.20&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"},
-    {"type":"MTProto","server":"149.154.167.91","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.167.91&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.167.103","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.167.103&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.167.92","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.167.92&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.167.100","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.167.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.171.100","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.171.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.175.100","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.175.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.175.102","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.175.102&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"},
-    {"type":"MTProto","server":"149.154.167.200","port":"8443","secret":"dd070b1b71f82167e279061e9b53f4f1","flag":"🇬🇧","raw":"tg://proxy?server=149.154.167.200&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"}
+    {
+      "type": "MTProto",
+      "server": "185.173.36.38",
+      "port": "443",
+      "secret": "eeRighJJvXrFGRMCIMJdCQ",
+      "flag": "🇳🇱",
+      "raw": "tg://proxy?server=185.173.36.38&port=443&secret=eeRighJJvXrFGRMCIMJdCQ"
+    },
+    {
+      "type": "MTProto",
+      "server": "91.107.255.159",
+      "port": "8443",
+      "secret": "eeNEgYdJvXrFGRMCIMJdCQ",
+      "flag": "🇩",
+      "raw": "tg://proxy?server=91.107.255.159&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"
+    },
+    {
+      "type": "MTProto",
+      "server": "65.109.153.70",
+      "port": "8443",
+      "secret": "1320PuNyHw_LQKT_Y7XNJw",
+      "flag": "🇫🇮",
+      "raw": "tg://proxy?server=65.109.153.70&port=8443&secret=1320PuNyHw_LQKT_Y7XNJw"
+    },
+    {
+      "type": "MTProto",
+      "server": "51.15.246.20",
+      "port": "8443",
+      "secret": "eeNEgYdJvXrFGRMCIMJdCQ",
+      "flag": "🇫🇷",
+      "raw": "tg://proxy?server=51.15.246.20&port=8443&secret=eeNEgYdJvXrFGRMCIMJdCQ"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.167.91",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.167.91&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.167.103",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.167.103&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.167.92",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.167.92&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.167.100",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.167.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.171.100",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.171.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.175.100",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.175.100&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.175.102",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.175.102&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    },
+    {
+      "type": "MTProto",
+      "server": "149.154.167.200",
+      "port": "8443",
+      "secret": "dd070b1b71f82167e279061e9b53f4f1",
+      "flag": "🇬🇧",
+      "raw": "tg://proxy?server=149.154.167.200&port=8443&secret=dd070b1b71f82167e279061e9b53f4f1"
+    }
   ],
-  "source": "fallback"
+  "source": "telegram"
 }
