@@ -3,472 +3,370 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MTProto Proxy ✓ v2.0.2</title>
+    <title>Telegram Proxy Hub v2.0.3</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;600&display=swap');
-        * { box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Ubuntu', sans-serif; margin: 0; padding: 0;
-            display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh; background: #0f172a; color: #e2e8f0;
-            padding: 20px 10px;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0b1120; color: #e2e8f0;
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+            padding: 24px 12px;
         }
         .container {
-            max-width: 700px; width: 100%; margin: 20px auto;
-            background: rgba(30,41,59,0.8); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            max-width: 680px; width: 100%; margin: 0 auto;
+            background: rgba(15,23,42,0.9); backdrop-filter: blur(12px);
+            border-radius: 24px; padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.45); border: 1px solid #1e293b;
         }
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.75rem; opacity: 0.75; border-bottom: 1px solid #334155;
-            padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
+            padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;
         }
-        h1 { font-size: 1.3rem; text-align: center; margin: 0 0 6px 0; font-weight: 600; }
-        .sub { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; }
+        .version { font-size: 0.8rem; font-weight: 500; color: #94a3b8; }
+        .stats { font-size: 0.75rem; color: #64748b; }
+        h1 { font-size: 1.5rem; font-weight: 600; text-align: center; margin: 8px 0 6px; }
+        .sub { text-align: center; font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
         
-        /* 🔹 Компактные карточки */
+        /* 🔹 Карточки прокси */
         .proxy-card {
-            background: #1e293b; border-radius: 14px; padding: 10px 12px;
-            margin-bottom: 10px; transition: border-color 0.2s;
-            border: 2px solid transparent; position: relative;
-            display: grid; grid-template-columns: 1fr auto; gap: 8px 12px;
-            align-items: center;
+            background: #111827; border-radius: 16px; padding: 12px 14px;
+            margin-bottom: 10px; display: grid; grid-template-columns: auto 1fr auto;
+            gap: 12px; align-items: center; position: relative;
+            border: 2px solid transparent; transition: all 0.25s ease;
+            overflow: hidden;
         }
-        .proxy-card.working {
+        .proxy-card.active {
             border-color: #facc15;
-            box-shadow: 0 0 12px rgba(250, 204, 21, 0.15);
-            animation: goldPulse 2.5s infinite ease-in-out;
+            box-shadow: 0 0 16px rgba(250,204,21,0.25), inset 0 0 24px rgba(250,204,21,0.05);
+            animation: goldGlow 2.5s infinite alternate ease-in-out;
         }
-        .proxy-card.used { animation: none !important; border-color: #22c55e !important; opacity: 0.95; }
+        @keyframes goldGlow {
+            0% { box-shadow: 0 0 16px rgba(250,204,21,0.2), inset 0 0 24px rgba(250,204,21,0.03); }
+            100% { box-shadow: 0 0 24px rgba(250,204,21,0.4), inset 0 0 36px rgba(250,204,21,0.08); }
+        }
+        .proxy-card.active::before {
+            content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 2px;
+            background: linear-gradient(90deg, transparent, #facc15, transparent);
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-50%); } 100% { transform: translateX(50%); } }
+        
+        /* ⬜ Использованный прокси */
+        .proxy-card.used {
+            filter: grayscale(1); opacity: 0.65; pointer-events: none; animation: none;
+            border-color: #334155;
+        }
         .proxy-card.used::after {
-            content: '✓'; position: absolute; top: 4px; right: 8px;
-            color: #22c55e; font-weight: bold; font-size: 1rem;
-        }
-        @keyframes goldPulse {
-            0%, 100% { box-shadow: 0 0 12px rgba(250, 204, 21, 0.15); }
-            50% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.3); }
+            content: '✓ Использован'; position: absolute; top: 8px; right: 12px;
+            font-size: 0.65rem; background: #334155; color: #94a3b8; padding: 2px 6px; border-radius: 6px;
         }
         
-        .proxy-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .proxy-name {
-            font-weight: 500; color: #facc15; font-size: 0.9rem;
-            display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        .flag { font-size: 1.8rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+        .info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+        .host { font-weight: 500; color: #f1f5f9; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .meta { display: flex; gap: 8px; align-items: center; font-size: 0.75rem; color: #94a3b8; }
+        .type-badge {
+            background: #3b82f620; color: #60a5fa; padding: 2px 6px; border-radius: 4px;
+            font-weight: 500; font-size: 0.65rem; text-transform: uppercase;
         }
-        .proxy-name .flag { font-size: 1rem; flex-shrink: 0; }
-        .proxy-server { font-size: 0.75rem; font-family: monospace; color: #cbd5e1; opacity: 0.9; }
-        .proxy-meta { font-size: 0.65rem; color: #64748b; display: flex; gap: 8px; flex-wrap: wrap; }
         .ping-badge {
-            display: inline-flex; align-items: center; gap: 3px;
-            padding: 2px 6px; border-radius: 8px; font-weight: 500;
+            padding: 2px 6px; border-radius: 4px; font-weight: 500; min-width: 42px; text-align: center;
         }
         .ping-good { background: #22c55e20; color: #4ade80; }
         .ping-mid { background: #eab30820; color: #facc15; }
         .ping-bad { background: #ef444420; color: #f87171; }
         
-        .status {
-            font-size: 0.7rem; padding: 3px 10px; border-radius: 20px;
-            font-weight: 500; text-align: right; align-self: start;
+        .btn {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff;
+            border: none; padding: 8px 16px; border-radius: 10px; font-weight: 500;
+            cursor: pointer; font-size: 0.85rem; transition: all 0.15s;
+            box-shadow: 0 2px 8px rgba(14,165,233,0.25);
         }
-        .status-working { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e40; }
-        .status-slow { background: #eab30820; color: #facc15; border: 1px solid #eab30840; }
-        .status-bad { background: #ef444420; color: #f87171; border: 1px solid #ef444440; }
-        
-        .btn-connect {
-            grid-column: 1 / -1; justify-self: start;
-            background: linear-gradient(135deg, #0d9488, #0f766e);
-            padding: 6px 18px; border-radius: 30px; text-decoration: none;
-            color: white; font-weight: 500; font-size: 0.8rem;
-            transition: all 0.15s; border: none; cursor: pointer;
-            margin-top: 2px;
-        }
-        .btn-connect:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-connect:active { transform: translateY(0); }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(0); }
         
         .footer {
-            text-align: center; font-size: 0.65rem; margin-top: 18px; opacity: 0.6;
-            display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap;
+            text-align: center; margin-top: 18px; font-size: 0.75rem; color: #64748b;
+            display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;
         }
         .refresh-btn {
-            background: none; border: 1px solid #475569; color: #94a3b8;
-            padding: 3px 10px; border-radius: 16px; font-size: 0.65rem;
-            cursor: pointer; transition: 0.15s;
+            background: none; border: 1px solid #334155; color: #94a3b8;
+            padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 0.7rem;
+            transition: 0.15s;
         }
         .refresh-btn:hover { border-color: #64748b; color: #e2e8f0; }
         
-        .loader { text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .loader-spinner {
-            width: 32px; height: 32px; border: 3px solid #334155;
-            border-top-color: #facc15; border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .loader { text-align: center; padding: 40px 20px; color: #94a3b8; }
+        .spinner {
+            width: 28px; height: 28px; border: 3px solid #1e293b; border-top-color: #0ea5e9;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .error {
-            background: #7f1d1d; padding: 12px; border-radius: 14px;
-            text-align: center; border: 1px solid #ef444450; font-size: 0.8rem;
-        }
-        .fallback-notice {
-            background: #78350f30; border: 1px solid #facc1550;
-            border-radius: 12px; padding: 8px 12px; margin-bottom: 12px;
-            font-size: 0.75rem; text-align: center; color: #facc15;
-        }
-        .next-update { font-size: 0.7rem; color: #64748b; text-align: center; margin: 8px 0; }
-        
-        @media (max-width: 500px) {
-            .proxy-card { grid-template-columns: 1fr; gap: 6px; }
-            .status { justify-self: start; }
-            .btn-connect { width: 100%; text-align: center; }
+        .error { background: #450a0a; border: 1px solid #7f1d1d; padding: 12px; border-radius: 12px; text-align: center; margin: 20px 0; color: #fca5a5; }
+        .notice { background: #1e293b; border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 12px 0; border-radius: 6px; font-size: 0.75rem; color: #94a3b8; }
+
+        @media (max-width: 520px) {
+            .proxy-card { grid-template-columns: 1fr; gap: 8px; }
+            .btn { width: 100%; text-align: center; }
+            .proxy-card.active::before { animation-duration: 4s; }
         }
     </style>
 </head>
 <body>
 <div class="container" id="app">
     <div class="loader">
-        <div class="loader-spinner"></div>
-        <div>🔍 Загрузка проверенных прокси...</div>
+        <div class="spinner"></div>
+        <div>Загрузка и проверка прокси...</div>
     </div>
 </div>
 
 <script>
-    // 📌 ВЕРСИЯ — обновляйте при изменениях
-    const VERSION = "2.0.2";
-    const CHANGELOG = {
-        "2.0.2": "Оптимизация: компактные карточки, пинг с задержкой 10с, анимация отключается после подключения",
-        "2.0.1": "Многоуровневые источники + fallback-список",
-        "2.0.0": "API с проверенными прокси, золотая анимация"
+    const VERSION = "2.0.3";
+    const REFRESH_MS = 3600000; // 1 час
+    const PING_INTERVAL = 10000; // 10 сек
+    const CACHE_TTL = 1800000;   // 30 мин
+    const CACHE_KEY = `tgproxies_v${VERSION}`;
+    const USED_KEY = `tgproxies_used_v${VERSION}`;
+
+    const FLAGS = {
+        "US":"🇺🇸","DE":"🇩🇪","NL":"🇳🇱","FR":"🇫🇷","GB":"🇬🇧","FI":"🇫🇮","RU":"🇷🇺",
+        "UA":"🇺🇦","PL":"🇵🇱","SG":"🇸🇬","JP":"🇯🇵","IN":"🇮🇳","CA":"🇨🇦","AU":"🇦🇺",
+        "BR":"🇧🇷","TR":"🇹🇷","IR":"🇮🇷","AE":"🇦🇪","IL":"🇮🇱","SE":"🇸🇪","NO":"🇳🇴",
+        "CZ":"🇨🇿","LV":"🇱🇻","LT":"🇱🇹","EE":"🇪🇪","KZ":"🇰🇿","UZ":"🇺🇿","MD":"🇲🇩",
+        "BY":"🇧🇾","GE":"🇬🇪","AM":"🇦🇲","AZ":"🇦🇿"
     };
-    
-    const language = navigator.language || "ru";
-    const isRussian = language.startsWith("ru");
-    const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 час
-    const PING_UPDATE_INTERVAL = 10000; // 10 секунд обновление пинга
-    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 минут кэш
+    const DEFAULT_FLAG = "🌐";
 
     const text = {
-        title: isRussian ? "🔐 MTProto прокси" : "🔐 MTProto Proxies",
-        sub: isRussian ? "Только рабочие • Автопроверка" : "Verified working • Auto-check",
-        working: isRussian ? "✅ Работает" : "✅ Online",
-        slow: isRussian ? "⚠️ Медленный" : "⚠️ Slow",
-        notWorking: isRussian ? "❌ Оффлайн" : "❌ Offline",
-        connect: isRussian ? "🚀 Подключить" : "🚀 Connect",
-        connected: isRussian ? "✓ Используется" : "✓ Connected",
-        footer: isRussian ? "Источники: mtproto.space + резерв" : "Sources: mtproto.space + fallback",
-        nextUpdate: isRussian ? "Обновление через" : "Next update in",
-        refresh: isRussian ? "🔄" : "🔄",
-        error: isRussian ? "❌ Не удалось загрузить" : "❌ Load failed",
-        fallback: isRussian ? "⚠️ Резервный список" : "⚠️ Fallback list",
-        ping: isRussian ? "Пинг" : "Ping"
+        title: "Прокси для Telegram",
+        sub: "Автоматический подбор и проверка доступности",
+        connect: "Подключить",
+        connected: "✓ Подключено",
+        update: "Обновление через",
+        refresh: "🔄",
+        error: "Не удалось загрузить рабочие прокси. Попробуйте позже.",
+        ping: "Пинг",
+        notice: "Браузер проверяет только доступность хоста. Для реальной работы MTProto/SOCKS требуется Telegram-клиент."
     };
 
-    // 🔗 ИСТОЧНИКИ — приоритет по надёжности
+    // 🔗 Источники (MTProto + попытка SOCKS/HTTP)
     const SOURCES = [
-        // 🥇 Главный: mtproto.space — реально проверяет прокси
         { url: "https://mtproto.space/api/proxies", type: "api", priority: 1 },
-        // 🥈 Резерв: mtproto.shop
-        { url: "https://www.mtproto.shop/api/proxies.json", type: "api", priority: 2 },
-        // 🥉 GitHub TXT (только если API недоступны)
-        { url: "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt", type: "txt", priority: 3 },
-        { url: "https://raw.githubusercontent.com/Telegram-MTProxy/proxy-list/main/mtproto.txt", type: "txt", priority: 4 },
-        // 🆘 Fallback: встроенные проверенные (обновляйте вручную раз в месяц)
-        { type: "fallback", priority: 99, data: [
-            { server: "185.173.36.38", port: "443", secret: "eeRighJJvXrFGRMCIMJdCQ", location: "NL", flag: "🇳🇱" },
-            { server: "91.107.255.159", port: "8443", secret: "eeNEgYdJvXrFGRMCIMJdCQ", location: "DE", flag: "🇩🇪" },
-            { server: "65.109.153.70", port: "8443", secret: "1320PuNyHw_LQKT_Y7XNJw", location: "FI", flag: "🇫🇮" }
-        ]}
+        { url: "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt", type: "txt", priority: 2 },
+        { url: "https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt", type: "txt", priority: 3 },
+        { url: "https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_eu.txt", type: "txt", priority: 4 }
     ];
 
-    // 🗄️ Кэш в localStorage
-    const CACHE_KEY = "mtproto_proxies_cache_v2";
-    
-    function getFromCache() {
+    // 🗄️ Кэш
+    function loadCache() {
         try {
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (!cached) return null;
-            const { proxies, timestamp } = JSON.parse(cached);
-            if (Date.now() - timestamp < CACHE_TTL_MS) {
-                console.log("♻️ Используем кэш");
-                return proxies;
-            }
-        } catch(e) { console.warn("Cache error:", e); }
+            const d = JSON.parse(localStorage.getItem(CACHE_KEY));
+            if (d && Date.now() - d.time < CACHE_TTL) return d.proxies;
+        } catch(e) {}
         return null;
     }
-    
-    function saveToCache(proxies) {
-        try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify({ proxies, timestamp: Date.now() }));
-        } catch(e) { console.warn("Cache save error:", e); }
+    function saveCache(proxies) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ proxies, time: Date.now() })); } catch(e) {}
     }
 
-    function makeTgLink(server, port, secret) {
-        return `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`;
-    }
-
-    function parseProxyLine(line) {
-        let match = line.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&\s]+)/);
-        if (match) {
-            return {
-                server: decodeURIComponent(match[1]), port: match[2],
-                secret: decodeURIComponent(match[3]), rawLink: match[0],
-                location: null, flag: "🌐", ping: null, speed: null
-            };
-        }
-        match = line.match(/https?:\/\/t\.me\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&\s]+)/);
-        if (match) {
-            const server = decodeURIComponent(match[1]), port = match[2], secret = decodeURIComponent(match[3]);
-            return {
-                server, port, secret,
-                rawLink: `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`,
-                location: null, flag: "🌐", ping: null, speed: null
-            };
-        }
+    // 📝 Парсинг ссылок (MTProto / SOCKS5 / HTTP)
+    function parseLine(line) {
+        const l = line.trim();
+        // MTProto
+        let m = l.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&\s]+)/);
+        if (m) return { type: "MTProto", server: decodeURIComponent(m[1]), port: m[2], secret: decodeURIComponent(m[3]), raw: l };
+        // SOCKS5
+        m = l.match(/tg:\/\/socks\?server=([^&]+)&port=(\d+)(?:&user=([^&]*))?(?:&pass=([^&\s]*))?/);
+        if (m) return { type: "SOCKS5", server: decodeURIComponent(m[1]), port: m[2], user: m[3]||"", pass: m[4]||"", raw: l };
+        // HTTP
+        m = l.match(/tg:\/\/http\?server=([^&]+)&port=(\d+)(?:&user=([^&]*))?(?:&pass=([^&\s]*))?/);
+        if (m) return { type: "HTTP", server: decodeURIComponent(m[1]), port: m[2], user: m[3]||"", pass: m[4]||"", raw: l };
         return null;
     }
 
-    // 🎯 Загрузка из API
-    async function fetchFromAPI(url) {
-        const resp = await fetch(url, { cache: "no-store", mode: "cors" });
-        if (!resp.ok) throw new Error("API error");
-        const data = await resp.json();
-        const proxies = Array.isArray(data) ? data : (data.proxies || data.items || []);
-        return proxies
-            .filter(p => {
-                const status = (p.status || p.online || "").toLowerCase();
-                return status === "online" || status === "ok" || status === "active" || !status;
-            })
-            .filter(p => {
-                const ping = parseInt(p.ping || p.latency);
-                return !ping || ping < 400; // отбрасываем очень медленные
-            })
-            .map(p => ({
-                server: p.server || p.domain || p.host,
-                port: String(p.port),
-                secret: p.secret || p.password,
-                rawLink: p.link || p.url || makeTgLink(p.server || p.domain, p.port, p.secret || p.password),
-                status: (p.status || p.online || "online").toLowerCase(),
-                ping: p.ping || p.latency || null,
-                speed: p.speed || null,
-                location: p.location || p.country || null,
-                flag: p.flag || getFlag(p.location || p.country),
-                source: "api"
-            }));
-    }
-
-    function getFlag(country) {
-        const flags = { "NL":"🇳🇱","DE":"🇩🇪","FI":"🇫🇮","US":"🇺🇸","GB":"🇬🇧","FR":"🇫🇷","RU":"🇷🇺","UA":"🇺🇦","PL":"🇵🇱" };
-        return flags[country?.toUpperCase()] || "🌐";
-    }
-
-    // 📄 Загрузка из TXT
-    async function fetchFromTXT(url) {
-        const resp = await fetch(url, { cache: "no-store" });
-        if (!resp.ok) throw new Error("TXT error");
-        const text = await resp.text();
-        const seen = new Set();
-        return text.split("\n")
-            .map(l => l.trim()).filter(Boolean)
-            .map(parseProxyLine).filter(Boolean)
-            .filter(p => !seen.has(`${p.server}:${p.port}`) && seen.add(`${p.server}:${p.port}`))
-            .slice(0, 20);
-    }
-
-    // 🔍 «Мягкая» проверка: пинг хоста через Image (не протокол, но хотя бы хост онлайн)
-    async function softPing(server, timeout = 3000) {
-        return new Promise((resolve) => {
-            const start = Date.now();
+    // 🔍 Проверка доступности хоста (Image + fetch)
+    async function pingHost(server, port, timeout = 3000) {
+        return new Promise(resolve => {
+            const start = performance.now();
             const img = new Image();
-            const cleanup = () => { img.onload = img.onerror = null; img.src = ""; };
-            const timer = setTimeout(() => { cleanup(); resolve(null); }, timeout);
-            img.onload = () => { cleanup(); clearTimeout(timer); resolve(Date.now() - start); };
-            img.onerror = () => { cleanup(); clearTimeout(timer); resolve(null); };
-            // Пробуем загрузить 1x1 пиксель — многие сервера отвечают даже на несуществующие пути
-            img.src = `https://${server}/favicon.ico?_=${Date.now()}`;
+            const t = setTimeout(() => { cleanup(); resolve(null); }, timeout);
+            const cleanup = () => { clearTimeout(t); img.onload = img.onerror = null; img.src = ""; };
+            img.onload = img.onerror = () => {
+                cleanup();
+                const p = Math.round(performance.now() - start);
+                resolve(p < timeout ? p : null);
+            };
+            // Пробуем HTTPS (часто работает для MTProto на 443/8443)
+            img.src = `https://${server}:${port}/ping?t=${Date.now()}`;
         });
     }
 
-    // 🔄 Универсальный загрузчик с приоритетами
-    async function fetchProxiesWithFallback() {
-        // Сначала пробуем кэш
-        const cached = getFromCache();
-        if (cached?.length) return { proxies: cached, usedFallback: false, fromCache: true };
+    // 🌐 Получить флаг
+    function getFlag(country) {
+        if (!country) return DEFAULT_FLAG;
+        const c = country.toUpperCase();
+        return FLAGS[c] || DEFAULT_FLAG;
+    }
 
-        for (const source of SOURCES.sort((a,b) => a.priority - b.priority)) {
+    // 📥 Загрузка прокси
+    async function fetchProxies() {
+        const cached = loadCache();
+        if (cached?.length) return { proxies: cached, fromCache: true };
+
+        for (const src of SOURCES.sort((a,b)=>a.priority-b.priority)) {
             try {
-                console.log(`📡 Источник #${source.priority}: ${source.url || "fallback"}`);
-                let proxies = [];
-                
-                if (source.type === "fallback") {
-                    proxies = (source.data || []).map(d => ({ ...d, rawLink: makeTgLink(d.server, d.port, d.secret), source: "fallback" }));
-                } else if (source.type === "api") {
-                    proxies = await fetchFromAPI(source.url);
-                } else if (source.type === "txt") {
-                    proxies = await fetchFromTXT(source.url);
+                let text, proxies = [];
+                if (src.type === "api") {
+                    const r = await fetch(src.url); if (!r.ok) continue;
+                    const json = await r.json();
+                    const arr = Array.isArray(json) ? json : (json.proxies || json.items || []);
+                    proxies = arr.filter(p => (p.status||"online").toLowerCase() !== "offline")
+                        .map(p => parseLine(p.link || p.raw || `tg://${p.type?.toLowerCase()||"proxy"}?server=${p.server||p.domain}&port=${p.port}&secret=${p.secret}`))
+                        .filter(Boolean);
+                } else {
+                    const r = await fetch(src.url); if (!r.ok) continue;
+                    text = await r.text();
+                    proxies = text.split("\n").map(parseLine).filter(Boolean).slice(0, 25);
                 }
-                
-                if (proxies?.length >= 3) {
-                    console.log(`✅ Получено: ${proxies.length} прокси`);
-                    saveToCache(proxies);
-                    return { proxies, usedFallback: source.priority > 2, fromCache: false };
+
+                if (proxies.length >= 3) {
+                    // Добавляем флаги
+                    proxies = proxies.map(p => ({ ...p, flag: getFlag(p.country || p.location) }));
+                    saveCache(proxies);
+                    return { proxies, fromCache: false };
                 }
-            } catch (e) {
-                console.warn(`❌ Ошибка источника #${source.priority}:`, e.message);
-                continue;
-            }
+            } catch(e) { console.warn(`Source ${src.url} failed:`, e); }
         }
-        return { proxies: [], usedFallback: true, errors: true };
+        return { proxies: [], fromCache: false };
     }
 
-    // 📊 Форматирование пинга
-    function formatPing(ms) {
-        if (!ms) return { text: "—", cls: "" };
-        if (ms < 100) return { text: `${ms}ms`, cls: "ping-good" };
-        if (ms < 250) return { text: `${ms}ms`, cls: "ping-mid" };
-        return { text: `${ms}ms`, cls: "ping-bad" };
-    }
-
-    // 🎨 Рендер карточек
-    function renderProxies(proxies, usedFallback) {
+    // 🎨 Рендер
+    function render(proxies) {
+        const activeProxies = proxies.filter(p => !isUsed(p));
         let html = `
             <div class="header">
-                <div class="version">v${VERSION} <span title="${CHANGELOG[VERSION]||''}" style="cursor:help">ℹ️</span></div>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <span>📡 ${proxies.length}</span>
-                    <button class="refresh-btn" onclick="manualRefresh()" title="Обновить">${text.refresh}</button>
-                </div>
+                <div class="version">v${VERSION}</div>
+                <div class="stats">🟢 Доступно: ${activeProxies.length} / ${proxies.length}</div>
             </div>
             <h1>${text.title}</h1>
             <div class="sub">${text.sub}</div>
+            <div class="notice">${text.notice}</div>
         `;
-
-        if (usedFallback) {
-            html += `<div class="fallback-notice">⚠️ ${text.fallback}</div>`;
-        }
 
         if (!proxies.length) {
             html += `<div class="error">${text.error}</div>`;
         } else {
             for (const p of proxies) {
-                const isWorking = p.status !== "offline" && p.status !== "error";
-                const statusClass = isWorking ? "status-working" : "status-bad";
-                const statusText = isWorking ? text.working : text.notWorking;
-                const pingInfo = formatPing(p.ping);
+                const used = isUsed(p);
+                const ping = p.ping || null;
+                const pingCls = ping ? (ping < 100 ? "ping-good" : ping < 250 ? "ping-mid" : "ping-bad") : "";
                 
                 html += `
-                    <div class="proxy-card ${isWorking ? 'working' : ''}" id="card-${p.server}-${p.port}" data-raw="${p.rawLink}">
-                        <div class="proxy-info">
-                            <div class="proxy-name">
-                                <span class="flag">${p.flag}</span>
-                                <span title="${p.server}">${p.location || p.server}</span>
-                            </div>
-                            <div class="proxy-server">${p.server}:${p.port}</div>
-                            <div class="proxy-meta">
-                                ${pingInfo.text !== "—" ? `<span class="ping-badge ${pingInfo.cls}" id="ping-${p.server}-${p.port}">📡 ${pingInfo.text}</span>` : ""}
-                                ${p.speed ? `<span>⚡ ${p.speed}</span>` : ""}
+                    <div class="proxy-card ${used ? "used" : "active"}" data-key="${p.server}:${p.port}">
+                        <div class="flag">${p.flag}</div>
+                        <div class="info">
+                            <div class="host" title="${p.server}:${p.port}">${p.server}:${p.port}</div>
+                            <div class="meta">
+                                <span class="type-badge">${p.type}</span>
+                                <span class="ping-badge ${pingCls}" id="ping-${p.server}-${p.port}">
+                                    ${ping ? `📡 ${ping}ms` : "🔄 Проверка..."}
+                                </span>
                             </div>
                         </div>
-                        <div class="status ${statusClass}">${statusText}</div>
-                        ${isWorking ? `<a class="btn-connect" href="${p.rawLink}" target="_blank" onclick="onConnect(this, '${p.server}', '${p.port}')">${text.connect}</a>` : ""}
+                        <button class="btn" onclick="connectProxy(this, '${p.raw}')">${used ? text.connected : text.connect}</button>
                     </div>
                 `;
             }
         }
 
-        const nextUpdate = new Date(Date.now() + REFRESH_INTERVAL_MS);
+        const next = new Date(Date.now() + REFRESH_MS);
         html += `
-            <div class="next-update">${text.nextUpdate}: <span id="countdown">${formatCountdown(nextUpdate)}</span></div>
             <div class="footer">
-                ${text.footer} • <span id="ping-status" style="opacity:0.7">🔄 пинг: каждые 10с</span>
+                ${text.update}: <span id="countdown">--:--</span>
+                <button class="refresh-btn" onclick="location.reload()">${text.refresh}</button>
             </div>
         `;
         document.getElementById("app").innerHTML = html;
         
-        // Запускаем обновление пинга для рабочих прокси
-        if (proxies.length) startPingUpdates(proxies.filter(p => p.status !== "offline"));
+        // Запуск пинг-обновлений
+        if (proxies.length) startPingLoop(proxies);
+        startCountdown(next);
     }
 
-    function formatCountdown(target) {
-        const diff = target - Date.now();
-        if (diff <= 0) return "00:00";
-        const m = Math.floor(diff/60000), s = Math.floor((diff%60000)/1000);
-        return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    function isUsed(p) {
+        try { return JSON.parse(localStorage.getItem(USED_KEY) || "[]").includes(`${p.server}:${p.port}`); }
+        catch(e) { return false; }
+    }
+    function markUsed(p) {
+        try {
+            const arr = JSON.parse(localStorage.getItem(USED_KEY) || "[]");
+            const k = `${p.server}:${p.port}`;
+            if (!arr.includes(k)) { arr.push(k); localStorage.setItem(USED_KEY, JSON.stringify(arr.slice(-50))); }
+        } catch(e) {}
     }
 
-    function startCountdown(target) {
-        const el = document.getElementById("countdown");
-        if (!el) return;
-        const int = setInterval(() => {
-            if (el) el.textContent = formatCountdown(target);
-            if (Date.now() >= target) { clearInterval(int); manualRefresh(); }
-        }, 1000);
-    }
-
-    // 🔄 Обновление пинга каждые 10 секунд (только для видимых карточек)
-    async function startPingUpdates(proxies) {
+    // 📡 Пинг каждые 10 сек
+    async function startPingLoop(proxies) {
         const update = async () => {
             for (const p of proxies) {
+                if (isUsed(p)) continue;
                 const el = document.getElementById(`ping-${p.server}-${p.port}`);
                 if (!el) continue;
-                const ping = await softPing(p.server, 2500);
-                if (ping && el) {
-                    const info = formatPing(ping);
-                    el.textContent = `📡 ${info.text}`;
-                    el.className = `ping-badge ${info.cls}`;
-                    // Если пинг плохой — можно визуально пометить, но не убираем карточку
+                const ping = await pingHost(p.server, p.port, 2500);
+                if (ping) {
+                    const cls = ping < 100 ? "ping-good" : ping < 250 ? "ping-mid" : "ping-bad";
+                    el.innerHTML = `📡 ${ping}ms`;
+                    el.className = `ping-badge ${cls}`;
+                } else {
+                    el.innerHTML = "⚠️ Нет ответа";
+                    el.className = "ping-badge ping-bad";
                 }
             }
         };
-        update(); // сразу
-        setInterval(update, PING_UPDATE_INTERVAL); // потом каждые 10с
+        update();
+        setInterval(update, PING_INTERVAL);
     }
 
-    // ✅ Обработчик подключения: останавливаем анимацию, помечаем как использованный
-    window.onConnect = function(btn, server, port) {
-        const card = document.getElementById(`card-${server}-${port}`);
-        if (card) {
-            card.classList.remove("working");
-            card.classList.add("used");
-            btn.textContent = text.connected;
-            btn.style.pointerEvents = "none";
-            btn.style.opacity = "0.85";
-        }
-        // Можно добавить аналитику или сохранить в localStorage
+    function formatCountdown(t) {
+        const d = t - Date.now();
+        if (d <= 0) return "00:00";
+        return `${Math.floor(d/60000).toString().padStart(2,'0')}:${Math.floor((d%60000)/1000).toString().padStart(2,'0')}`;
+    }
+    function startCountdown(t) {
+        const el = document.getElementById("countdown");
+        if (!el) return;
+        const i = setInterval(() => {
+            if (el) el.textContent = formatCountdown(t);
+            if (Date.now() >= t) { clearInterval(i); location.reload(); }
+        }, 1000);
+    }
+
+    window.connectProxy = function(btn, rawLink) {
+        const card = btn.closest(".proxy-card");
+        if (!card || card.classList.contains("used")) return;
+        
+        // Отмечаем как использованный
+        const key = card.dataset.key;
         try {
-            const used = JSON.parse(localStorage.getItem("mtproto_used") || "[]");
-            const key = `${server}:${port}`;
-            if (!used.includes(key)) {
-                used.push(key);
-                if (used.length > 50) used.shift();
-                localStorage.setItem("mtproto_used", JSON.stringify(used));
-            }
+            const [server, port] = key.split(":");
+            markUsed({ server, port });
         } catch(e) {}
+        
+        // Визуал
+        card.classList.remove("active");
+        card.classList.add("used");
+        btn.textContent = text.connected;
+        btn.disabled = true;
+        
+        // Открытие
+        window.location.href = rawLink;
     };
 
-    async function loadAndRender() {
-        document.getElementById("app").innerHTML = `
-            <div class="loader">
-                <div class="loader-spinner"></div>
-                <div>🔍 Проверка источников...</div>
-            </div>`;
-        
-        const { proxies, usedFallback, fromCache, errors } = await fetchProxiesWithFallback();
-        renderProxies(proxies, usedFallback);
-        
-        if (!fromCache && proxies.length) {
-            const next = new Date(Date.now() + REFRESH_INTERVAL_MS);
-            startCountdown(next);
-        }
-        if (errors) console.warn("⚠️ Все источники недоступны");
-    }
-
-    window.manualRefresh = function() {
-        // Очистить кэш при ручном обновлении
-        try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
-        loadAndRender();
-    };
-
-    document.addEventListener("DOMContentLoaded", () => {
-        loadAndRender();
-        setInterval(loadAndRender, REFRESH_INTERVAL_MS);
+    // 🚀 Запуск
+    document.addEventListener("DOMContentLoaded", async () => {
+        const { proxies, fromCache } = await fetchProxies();
+        render(proxies);
     });
 </script>
 </body>
