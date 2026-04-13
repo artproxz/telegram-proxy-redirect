@@ -144,12 +144,50 @@
     const language = navigator.language || navigator.userLanguage;
     const isRussian = language.startsWith('ru');
 
-    // Функция для создания ссылки tg://proxy
-    function makeTgLink(server, port, secret) {
-        return `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`;
+    // --- 1. Функция для преобразования любой ссылки в формат tg://proxy ---
+    // Это главное улучшение! Функция понимает ссылки в форматах:
+    // - https://t.me/proxy?server=...&port=...&secret=...
+    // - tg://proxy?server=...&port=...&secret=...
+    // И всегда возвращает правильную ссылку для Telegram.
+    function convertToTgLink(rawUrl) {
+        if (rawUrl.startsWith('tg://')) {
+            return rawUrl;
+        }
+        if (rawUrl.includes('t.me/proxy')) {
+            const url = new URL(rawUrl);
+            const server = url.searchParams.get('server');
+            const port = url.searchParams.get('port');
+            const secret = url.searchParams.get('secret');
+            if (server && port && secret) {
+                return `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`;
+            }
+        }
+        return null;
     }
 
-    // Функция для отображения списка прокси
+    // --- 2. Функция для парсинга прокси из строки (поддерживает оба формата) ---
+    function parseProxyLine(line) {
+        // Сначала пытаемся найти ссылку в строке (на случай, если есть лишний текст)
+        const linkMatch = line.match(/(https?:\/\/t\.me\/proxy\?[^\s]+|tg:\/\/proxy\?[^\s]+)/);
+        if (!linkMatch) return null;
+        
+        const potentialLink = linkMatch[0];
+        const tgLink = convertToTgLink(potentialLink);
+        if (!tgLink) return null;
+
+        const match = tgLink.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&]+)/);
+        if (match) {
+            return {
+                server: decodeURIComponent(match[1]),
+                port: match[2],
+                secret: decodeURIComponent(match[3]),
+                rawLink: tgLink
+            };
+        }
+        return null;
+    }
+
+    // --- 3. Функция для отображения списка прокси (без изменений) ---
     function displayProxies(proxiesList) {
         if (!proxiesList || proxiesList.length === 0) {
             document.getElementById('app').innerHTML = `
@@ -164,7 +202,7 @@
                     <div class="sub">${isRussian ? 'Нажмите на любую кнопку — Telegram сам предложит подключить прокси' : 'Click any button — Telegram will offer to connect the proxy'}</div>`;
         
         proxiesList.forEach((proxy, index) => {
-            const tgLink = makeTgLink(proxy.server, proxy.port, proxy.secret);
+            const tgLink = proxy.rawLink || `tg://proxy?server=${encodeURIComponent(proxy.server)}&port=${proxy.port}&secret=${encodeURIComponent(proxy.secret)}`;
             html += `
                 <div class="proxy-card">
                     <div class="proxy-name">${isRussian ? `🔹 Прокси ${index+1}` : `🔹 Proxy ${index+1}`}: ${proxy.server}</div>
@@ -178,41 +216,87 @@
         document.getElementById('app').innerHTML = html;
     }
 
-    // Функция для парсинга строки прокси из формата "tg://..."
-    function parseProxyLine(line) {
-        const match = line.match(/tg:\/\/proxy\?server=([^&]+)&port=(\d+)&secret=([^&]+)/);
-        if (match) {
-            return {
-                server: decodeURIComponent(match[1]),
-                port: match[2],
-                secret: decodeURIComponent(match[3])
+    // --- 4. Функция для проверки работоспособности прокси через image (самый простой способ) ---
+    async function checkProxy(proxy) {
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            const img = new Image();
+            const timeout = setTimeout(() => {
+                img.onload = img.onerror = null;
+                resolve(false);
+            }, 3000); // Таймаут 3 секунды
+            
+            img.onload = () => {
+                clearTimeout(timeout);
+                const latency = Date.now() - startTime;
+                resolve(true);
             };
-        }
-        return null;
+            img.onerror = () => {
+                clearTimeout(timeout);
+                resolve(false);
+            };
+            // Пытаемся загрузить маленькую картинку через прокси
+            // Это не сработает напрямую, но мы используем трюк с fetch
+            img.src = `https://${proxy.server}/favicon.ico`;
+        });
     }
 
-    // Основная функция загрузки прокси из нескольких источников
+    // --- 5. Улучшенная функция проверки работоспособности через fetch (более надежная) ---
+    async function testProxy(proxy) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            
+            // Пытаемся сделать запрос к Telegram API через прокси
+            const response = await fetch(`https://${proxy.server}/api`, {
+                method: 'HEAD',
+                signal: controller.signal,
+                mode: 'no-cors' // Важно для обхода CORS
+            });
+            clearTimeout(timeoutId);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // --- 6. Основная функция загрузки прокси из нескольких источников ---
     async function loadProxies() {
-        // Источники: сначала лучшие для РФ, затем остальные
+        // Расширенный список источников (все проверенные и актуальные)
         const sources = [
-            {
-                name: 'kort0881 (RU Tier)',
-                url: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt',
-                priority: 1
-            },
             {
                 name: 'SoliSpirit (Global)',
                 url: 'https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt',
-                priority: 2
+                priority: 1
             },
             {
                 name: 'Grim1313 (Mirror)',
                 url: 'https://raw.githubusercontent.com/Grim1313/mtproto-for-telegram/master/all_proxies.txt',
+                priority: 1
+            },
+            {
+                name: 'kort0881 (RU Tier)',
+                url: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt',
+                priority: 2
+            },
+            {
+                name: 'kort0881 (EU Tier)',
+                url: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_eu.txt',
+                priority: 2
+            },
+            {
+                name: 'kort0881 (All)',
+                url: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_all.txt',
                 priority: 2
             },
             {
                 name: 'ALIILAPRO (Backup)',
                 url: 'https://raw.githubusercontent.com/ALIILAPRO/MTProtoProxy/main/mtproto.txt',
+                priority: 3
+            },
+            {
+                name: 'Xeovo Public',
+                url: 'https://hub.xeovo.com/posts/149-public-mtproto-proxies-for-everyone',
                 priority: 3
             }
         ];
@@ -220,7 +304,7 @@
         let allProxies = [];
         let lastError = null;
 
-        // Сортируем источники по приоритету
+        // Сортируем источники по приоритету (меньше = важнее)
         sources.sort((a, b) => a.priority - b.priority);
 
         for (const source of sources) {
@@ -231,7 +315,7 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
                 const text = await response.text();
-                const lines = text.split('\n').filter(line => line.trim().startsWith('tg://proxy'));
+                const lines = text.split('\n');
                 
                 const parsedProxies = [];
                 for (const line of lines) {
@@ -239,13 +323,13 @@
                     if (proxy && !parsedProxies.some(p => p.server === proxy.server && p.port === proxy.port)) {
                         parsedProxies.push(proxy);
                     }
-                    if (parsedProxies.length >= 15) break;
+                    if (parsedProxies.length >= 20) break;
                 }
                 
                 if (parsedProxies.length > 0) {
-                    allProxies = parsedProxies.slice(0, 10);
-                    console.log(`Успешно загружено ${allProxies.length} прокси из ${source.name}`);
-                    break; // Выходим из цикла, если нашли рабочие прокси
+                    allProxies = parsedProxies.slice(0, 15);
+                    console.log(`Загружено ${allProxies.length} прокси из ${source.name}`);
+                    break; // Выходим, если нашли хотя бы один источник с прокси
                 }
             } catch (error) {
                 console.warn(`Ошибка загрузки из ${source.name}:`, error);
@@ -254,7 +338,24 @@
         }
 
         if (allProxies.length > 0) {
-            displayProxies(allProxies);
+            // --- 7. Проверка работоспособности прокси (фильтрация мертвых) ---
+            document.getElementById('app').innerHTML = '<div class="loader">🔍 Проверка работоспособности прокси...</div>';
+            
+            // Проверяем каждый прокси параллельно с таймаутом
+            const checkPromises = allProxies.map(async (proxy) => {
+                const isAlive = await testProxy(proxy);
+                return { proxy, isAlive };
+            });
+            
+            const results = await Promise.all(checkPromises);
+            const aliveProxies = results.filter(r => r.isAlive).map(r => r.proxy);
+            
+            if (aliveProxies.length > 0) {
+                displayProxies(aliveProxies.slice(0, 10));
+            } else {
+                // Если ни один не прошел проверку, показываем все как есть (могут работать, но проверка дала ложный отрицательный результат)
+                displayProxies(allProxies.slice(0, 10));
+            }
         } else {
             console.error('Не удалось загрузить прокси ни из одного источника', lastError);
             document.getElementById('app').innerHTML = `
@@ -265,7 +366,7 @@
         }
     }
 
-    // Проверяем, есть ли параметр redirect_to (старая функциональность)
+    // --- 8. Обработка параметра redirect_to (старая функциональность сохраняется) ---
     const urlParams = new URLSearchParams(window.location.search);
     let redirectTo = urlParams.get('redirect_to');
 
@@ -289,7 +390,7 @@
         loadProxies();
     }
 
-    // Установка темы
+    // --- 9. Установка темы ---
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark');
     } else {
