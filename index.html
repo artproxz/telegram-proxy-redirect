@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MTProto Proxy Hub v2.0.6</title>
+    <title>MTProto Proxy Hub v2.0.7</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -97,18 +97,10 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .error { background: #450a0a; border: 1px solid #7f1d1d; padding: 12px; border-radius: 12px; text-align: center; margin: 20px 0; color: #fca5a5; }
+        .error small { display: block; margin-top: 6px; opacity: 0.7; }
         .notice { background: #1e293b; border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 12px 0; border-radius: 6px; font-size: 0.75rem; color: #94a3b8; }
         .source-tag { font-size: 0.65rem; opacity: 0.6; margin-left: auto; }
-        .debug-toggle { cursor: pointer; opacity: 0.7; transition: 0.2s; }
-        .debug-toggle:hover { opacity: 1; }
-        .debug-panel {
-            background: #0f172a; border: 1px solid #334155; border-radius: 12px;
-            padding: 10px; margin: 12px 0; font-family: monospace; font-size: 0.7rem;
-            color: #94a3b8; max-height: 100px; overflow-y: auto; display: none;
-        }
-        .debug-panel.show { display: block; }
-        .log-entry { margin: 2px 0; }
-        .log-ok { color: #4ade80; } .log-warn { color: #facc15; } .log-err { color: #f87171; }
+        .config-notice { background: #78350f30; border: 1px solid #facc1550; border-radius: 12px; padding: 10px; margin: 12px 0; font-size: 0.75rem; color: #facc15; text-align: center; }
 
         @media (max-width: 520px) {
             .proxy-card { grid-template-columns: 1fr; gap: 8px; }
@@ -120,41 +112,38 @@
 <div class="container" id="app">
     <div class="loader">
         <div class="spinner"></div>
-        <div>Загрузка прокси из @ProxyFree_Ru...</div>
+        <div>Загрузка прокси...</div>
     </div>
 </div>
 
 <script>
-    const VERSION = "2.0.6";
-    const CHANGELOG = {
-        "2.0.6": "Канал @ProxyFree_Ru приоритет, анти-CORS, оптимизация пинга, фикс анимаций",
-        "2.0.5": "Диагностика, много источников, кэш",
-        "2.0.4": "ProxyFree парсинг, кликабельные used"
-    };
+    // ⚙️ НАСТРОЙКИ — ВСТАВЬТЕ СЮДА ВАШ WORKER URL
+    const WORKER_URL = "https://tg-proxy-fetcher.ваш-поддомен.workers.dev"; // ← ЗАМЕНИТЕ!
     
+    const VERSION = "2.0.7";
     const REFRESH_MS = 3600000, PING_INTERVAL = 10000, CACHE_TTL = 1800000;
     const CACHE_KEY = `tgproxies_v${VERSION}`, USED_KEY = `tgproxies_used_v${VERSION}`;
     
     const FLAGS = { "US":"🇺🇸","DE":"🇩🇪","NL":"🇳🇱","FR":"🇫🇷","GB":"🇬🇧","FI":"🇫🇮","RU":"🇷🇺","UA":"🇺🇦","PL":"🇵🇱","SG":"🇸🇬","JP":"🇯🇵","IN":"🇮🇳","CA":"🇨🇦","AU":"🇦🇺","BR":"🇧🇷","TR":"🇹🇷","IR":"🇮🇷","AE":"🇦🇪","IL":"🇮🇱","SE":"🇸🇪","NO":"🇳🇴","CZ":"🇨🇿","LV":"🇱🇻","LT":"🇱🇹","EE":"🇪🇪","KZ":"🇰🇿","UZ":"🇺🇿","MD":"🇲🇩","BY":"🇧🇾","GE":"🇬🇪","AM":"🇦🇲","AZ":"🇦🇿","VN":"🇻🇳","TH":"🇹🇭","MY":"🇲🇾" };
     const DEFAULT_FLAG = "🌐";
     
-    const text = { title: "Прокси для Telegram", sub: "Источник: @ProxyFree_Ru • Автопроверка", connect: "Подключить", update: "Обновление через", refresh: "🔄", error: "Не удалось загрузить прокси", ping: "Пинг", notice: "Проверяется доступность хоста. Для работы требуется клиент Telegram.", debug: "🔍", fallback: "⚠️ Резервный список" };
+    const text = { 
+        title: "Прокси для Telegram", 
+        sub: "Источник: @ProxyFree_Ru • Автопроверка", 
+        connect: "Подключить", 
+        update: "Обновление через", 
+        refresh: "🔄", 
+        error: "Не удалось загрузить прокси", 
+        ping: "Пинг", 
+        notice: "Проверяется доступность хоста. Для работы требуется клиент Telegram.",
+        configError: "⚠️ Не настроен WORKER_URL — см. консоль"
+    };
 
-    // 🔗 ИСТОЧНИКИ — приоритет + анти-CORS
+    // 🔗 ИСТОЧНИКИ — Worker приоритет + резервы
     const SOURCES = [
-        { 
-            name: "@ProxyFree_Ru", 
-            url: "https://t.me/s/ProxyFree_Ru",
-            corsUrls: [
-                u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-                u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-                u => `https://thingproxy.freeboard.io/fetch/${u}`
-            ],
-            type: "proxyfree", priority: 1 
-        },
+        { name: "MyWorker", url: WORKER_URL, type: "worker", priority: 1 },
         { name: "mtproto.space", url: "https://mtproto.space/api/proxies", type: "api", priority: 2, cors: true },
         { name: "SoliSpirit", url: "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt", type: "txt", priority: 3, cors: true },
-        { name: "kort0881 RU", url: "https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt", type: "txt", priority: 4, cors: true },
         { name: "Fallback", type: "fallback", priority: 99, data: [
             { server: "185.173.36.38", port: "443", secret: "eeRighJJvXrFGRMCIMJdCQ", flag: "🇳🇱" },
             { server: "91.107.255.159", port: "8443", secret: "eeNEgYdJvXrFGRMCIMJdCQ", flag: "🇩🇪" },
@@ -174,39 +163,6 @@
         return null;
     }
 
-    function parseProxyFreeBlock(text) {
-        const proxies = [];
-        // Формат 1: Server/Port/Secret в коде
-        const blocks = text.split(/(?=🔐|📡|Proxy|MTProto)/i);
-        for (const block of blocks) {
-            const s = block.match(/Server\s*[:：]?\s*`?([^`\n\r\s,]+)`?/i);
-            const p = block.match(/Port\s*[:：]?\s*`?(\d+)`?/i);
-            const sec = block.match(/Secret\s*[:：]?\s*`?([A-Za-z0-9_\-]+)`?/i);
-            const flag = block.match(/🇷🇺|🇺🇸|🇩🇪|🇳🇱|🇫🇷|🇬🇧|🇫🇮|🇺🇦|🇵🇱|🇸🇬|🇯🇵|🇮🇳|🇨🇦|🇦🇺|🇧🇷|🇹🇷|🇮🇷|🇦🇪|🇮🇱|🇸🇪|🇳🇴|🇨🇿|🇱🇻|🇱🇹|🇪🇪|🇰🇿|🇺🇿|🇲🇩|🇧🇾|🇬🇪|🇦🇲|🇦🇿|🇻🇳|🇹🇭|🇲🇾/);
-            if (s && p && sec) {
-                const server = s[1].trim(), port = p[1], secret = sec[1].trim();
-                if (server && port && secret) {
-                    proxies.push({
-                        type: "MTProto", server, port, secret,
-                        flag: flag ? flag[0] : (server.includes('.ru') ? "🇷🇺" : DEFAULT_FLAG),
-                        raw: `tg://proxy?server=${encodeURIComponent(server)}&port=${port}&secret=${encodeURIComponent(secret)}`,
-                        source: "proxyfree"
-                    });
-                }
-            }
-        }
-        // Формат 2: прямые tg:// ссылки в тексте
-        const links = text.match(/tg:\/\/proxy\?server=[^&]+&port=\d+&secret=[^\s]+/gi) || [];
-        for (const link of links) {
-            const p = parseTgLink(link);
-            if (p && !proxies.some(x => x.server === p.server && x.port === p.port)) {
-                p.flag = DEFAULT_FLAG; p.source = "proxyfree";
-                proxies.push(p);
-            }
-        }
-        return proxies;
-    }
-
     async function pingHost(server, port, timeout = 2500) {
         return new Promise(resolve => {
             const start = performance.now();
@@ -219,45 +175,25 @@
 
     function getFlag(c) { return (c && FLAGS[c.toUpperCase()]) || DEFAULT_FLAG; }
 
-    // 📥 Загрузка с CORS-фоллбеком
-    async function fetchWithCors(url, corsUrls, log) {
-        // Прямой запрос (может сработать если CORS разрешён)
-        try {
-            const r = await fetch(url, { cache: "no-store" });
-            if (r.ok) return await r.text();
-        } catch(e) { log(`  └─ Прямой: ${e.message}`, "err"); }
-        
-        // CORS-прокси по очереди
-        for (const build of corsUrls) {
-            const corsUrl = build(url);
-            try {
-                const r = await fetch(corsUrl, { cache: "no-store" });
-                if (r.ok) { log(`  └─ CORS: OK`, "ok"); return await r.text(); }
-            } catch(e) { log(`  └─ ${corsUrl.split('/')[2]}: ${e.message}`, "warn"); }
-        }
-        throw new Error("All CORS attempts failed");
-    }
-
-    async function fetchProxies(log) {
-        const cached = loadCache(); if (cached?.length) { log("♻️ Кэш", "ok"); return { proxies: cached, fromCache: true }; }
+    // 📥 Загрузка прокси
+    async function fetchProxies() {
+        const cached = loadCache(); if (cached?.length) return { proxies: cached, fromCache: true };
 
         for (const src of SOURCES.sort((a,b) => a.priority - b.priority)) {
             try {
-                log(`📡 ${src.name}...`, "warn");
-                let proxies = [], content = "";
+                console.log(`📡 ${src.name}...`);
+                let proxies = [];
 
-                if (src.type === "proxyfree") {
-                    content = await fetchWithCors(src.url, src.corsUrls, log);
-                    const doc = new DOMParser().parseFromString(content, "text/html");
-                    // 4 селектора для надёжности
-                    const selectors = [".tgme_widget_message_text", ".js-message_text", '[itemprop="text"]', ".message_text"];
-                    let text = "";
-                    for (const sel of selectors) {
-                        const els = doc.querySelectorAll(sel);
-                        if (els.length) { els.forEach(e => text += e.textContent + "\n"); break; }
+                if (src.type === "worker") {
+                    if (!src.url || src.url.includes("ваш-поддомен")) {
+                        console.warn("⚠️ WORKER_URL не настроен");
+                        continue;
                     }
-                    if (!text) text = doc.body.textContent || content;
-                    proxies = parseProxyFreeBlock(text);
+                    const r = await fetch(src.url);
+                    if (!r.ok) throw new Error(`Worker: ${r.status}`);
+                    const json = await r.json();
+                    if (!json.success) throw new Error(json.error || "Worker failed");
+                    proxies = json.proxies.map(p => ({ ...p, source: "worker" }));
                 }
                 else if (src.type === "api") {
                     const r = await fetch(src.url); if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -276,22 +212,19 @@
                     proxies = (src.data || []).map(d => ({
                         type: "MTProto", ...d,
                         raw: `tg://proxy?server=${encodeURIComponent(d.server)}&port=${d.port}&secret=${encodeURIComponent(d.secret)}`,
-                        source: "fallback"
+                        source: "fallback", flag: d.flag || DEFAULT_FLAG
                     }));
                 }
 
                 if (proxies.length >= 2) {
-                    // Дедупликация + лимит
                     const seen = new Set();
                     proxies = proxies.filter(p => { const k = `${p.server}:${p.port}`; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
-                    log(`✅ ${proxies.length} прокси`, "ok");
+                    console.log(`✅ ${proxies.length} прокси из ${src.name}`);
                     saveCache(proxies);
                     return { proxies, fromCache: false, source: src.name };
                 }
-                log(`  └─ Мало: ${proxies.length}`, "warn");
-            } catch(e) { log(`❌ ${src.name}: ${e.message}`, "err"); }
+            } catch(e) { console.warn(`❌ ${src.name}: ${e.message}`); }
         }
-        log("❌ Все источники упали", "err");
         return { proxies: [], fromCache: false };
     }
 
@@ -305,7 +238,7 @@
     function render(proxies, sourceName) {
         let html = `
             <div class="header">
-                <div class="version" title="${CHANGELOG[VERSION]||''}">v${VERSION} ℹ️</div>
+                <div class="version">v${VERSION}</div>
                 <div class="stats">
                     <span class="status-dot ${proxies.length ? 'online' : 'offline'}"></span>
                     📡 ${proxies.length}
@@ -316,8 +249,13 @@
             <div class="notice">${text.notice}</div>
         `;
 
+        // Проверка конфигурации
+        if (WORKER_URL.includes("ваш-поддомен")) {
+            html += `<div class="config-notice">${text.configError}<br><small>Откройте index.html и вставьте URL вашего Cloudflare Worker</small></div>`;
+        }
+
         if (!proxies.length) {
-            html += `<div class="error">${text.error}<br><small style="opacity:0.7">Проверьте соединение или нажмите 🔄</small></div>`;
+            html += `<div class="error">${text.error}<br><small>Проверьте WORKER_URL или нажмите 🔄</small></div>`;
         } else {
             for (const p of proxies) {
                 const used = isUsed(p);
@@ -343,22 +281,19 @@
         html += `
             <div class="footer">
                 ${text.update}: <span id="countdown">--:--</span>
-                <span class="debug-toggle" onclick="toggleDebug()">${text.debug}</span>
                 <button class="refresh-btn" onclick="location.reload()">${text.refresh}</button>
             </div>
-            <div class="debug-panel" id="debug"></div>
         `;
         document.getElementById("app").innerHTML = html;
         
         if (proxies.length) { startPingLoop(proxies); startCountdown(next); }
     }
 
-    // 📡 Пинг каждые 10 сек (оптимизировано)
     async function startPingLoop(proxies) {
         const update = async () => {
             for (const p of proxies) {
                 const el = document.getElementById(`ping-${p.server}-${p.port}`);
-                if (!el || el.offsetParent === null) continue; // не обновлять невидимые
+                if (!el || el.offsetParent === null) continue;
                 const ping = await pingHost(p.server, p.port);
                 if (ping && el) {
                     const info = formatPing(ping);
@@ -383,7 +318,6 @@
         }, 1000);
     }
 
-    // ✅ Подключение — используем, но не блокируем
     window.connectProxy = function(rawLink) {
         const match = rawLink.match(/server=([^&]+)&port=(\d+)/);
         if (match) {
@@ -398,36 +332,9 @@
         window.location.href = rawLink;
     };
 
-    // 🔍 Диагностика
-    window.toggleDebug = function() {
-        const panel = document.getElementById("debug");
-        if (!panel) return;
-        panel.classList.toggle("show");
-        if (panel.classList.contains("show") && !panel.dataset.filled) {
-            panel.dataset.filled = "1";
-            // Показываем последние логи из sessionStorage
-            try {
-                const logs = JSON.parse(sessionStorage.getItem("proxy_logs") || "[]");
-                panel.innerHTML = logs.map(l => `<div class="log-entry log-${l.type}">[${l.time}] ${l.msg}</div>`).join("");
-            } catch(e) {}
-        }
-    };
-
-    function log(msg, type="info") {
-        const entry = { time: new Date().toLocaleTimeString(), msg, type };
-        console.log(`[${entry.time}] ${msg}`);
-        try {
-            const logs = JSON.parse(sessionStorage.getItem("proxy_logs") || "[]");
-            logs.push(entry); if (logs.length > 50) logs.shift();
-            sessionStorage.setItem("proxy_logs", JSON.stringify(logs));
-        } catch(e) {}
-    }
-
-    // 🚀 Запуск
     document.addEventListener("DOMContentLoaded", async () => {
-        const { proxies, fromCache, source } = await fetchProxies(log);
-        const sourceName = source || (fromCache ? "кэш" : "");
-        render(proxies, sourceName);
+        const { proxies, fromCache, source } = await fetchProxies();
+        render(proxies, source || (fromCache ? "кэш" : ""));
     });
 </script>
 </body>
