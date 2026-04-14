@@ -1,18 +1,12 @@
 const https = require('https');
 const fs = require('fs');
-const path = require('path');
 
-const CHANNELS = [
-  'https://t.me/s/ProxyFree_Ru',
-  'https://t.me/s/MTProto_Proxy_Russia',
-  'https://t.me/s/proxy_fast',
-  'https://t.me/s/ProxyMTProto',
-  'https://t.me/s/FreeMTProto'
-];
+// ✅ ТОЛЬКО ОДИН КАНАЛ
+const CHANNEL_URL = 'https://t.me/s/ProxyFree_Ru';
 
 const FALLBACK = [
   {type:"MTProto",server:"185.173.36.38",port:"443",secret:"eeRighJJvXrFGRMCIMJdCQ",flag:"🇳🇱"},
-  {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩🇪"},
+  {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩"},
   {type:"MTProto",server:"65.109.153.70",port:"8443",secret:"1320PuNyHw_LQKT_Y7XNJw",flag:"🇫🇮"},
   {type:"MTProto",server:"51.15.246.20",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇫🇷"},
   {type:"MTProto",server:"149.154.167.91",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
@@ -26,15 +20,11 @@ const FALLBACK = [
 ];
 
 const FLAG_MAP = {
-  '185.': '🇳🇱', '91.107.': '🇩🇪', '65.109.': '🇫🇮', '51.15.': '🇫🇷',
-  '149.154.': '🇬🇧', '.ru': '🇷🇺', '.de': '🇩🇪', '.nl': '🇳🇱',
-  '.fr': '🇫🇷', '.fi': '🇫🇮', '.uk': '🇬🇧', '.us': '🇺🇸', '.sg': '🇸🇬',
-  '.ir': '🇮🇷', '.ae': '🇦🇪', '.tr': '🇹🇷', '.pl': '🇵🇱', '.by': '🇧🇾'
+  '185.': '🇳🇱', '91.107.': '🇩🇪', '65.109.': '🇫🇮', '51.15.': '🇫',
+  '149.154.': '🇬🇧', '.ru': '🇷🇺', '.de': '🇩🇪', '.nl': '🇳',
+  '.fr': '🇫🇷', '.fi': '🇫🇮', '.uk': '🇬🇧', '.us': '🇺🇸', '.sg': '🇸',
+  '.ir': '🇮🇷', '.ae': '🇦🇪', '.tr': '🇹', '.pl': '🇱', '.by': '🇧🇾'
 };
-
-// 🔑 Создаём уникальный ключ для прокси (для сравнения)
-const makeKey = (server, port, secret) => `${server}:${port}:${secret}`;
-const makeShortKey = (server, port) => `${server}:${port}`;
 
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
@@ -53,36 +43,78 @@ function fetchUrl(url) {
   });
 }
 
-function parseProxies(html) {
+// 🔍 Парсим прокси С ВРЕМЕНЕМ публикации каждого сообщения
+function parseProxiesFromChannel(html) {
   const proxies = [];
   const decoded = html
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'");
   
-  // 🔍 Стратегия 1: tg:// ссылки
-  const tgPattern = /tg:\/\/proxy\?server=([^&\s"']*)&port=(\d+)&secret=([A-Za-z0-9_+\-=/]+)/gi;
-  let match;
-  while ((match = tgPattern.exec(decoded)) !== null) {
-    const server = match[1].trim(), port = match[2].trim(), secret = match[3].trim();
-    if (server && port && secret.length >= 16 && server.toLowerCase() !== 'unknown') {
-      proxies.push({ type:'MTProto', server, port, secret, flag: getFlag(server) });
+  // 🔥 Разбиваем HTML на блоки сообщений
+  const messageBlocks = decoded.split(/<div[^>]*class="[^"]*tgme_widget_message[^"]*"[^>]*>/i).slice(1);
+  
+  console.log(`📦 Found ${messageBlocks.length} message blocks`);
+  
+  for (const block of messageBlocks) {
+    // 🕐 Извлекаем время публикации сообщения
+    const timeMatch = block.match(/<time[^>]*datetime="([^"]+)"/);
+    const messageTime = timeMatch ? new Date(timeMatch[1]).toISOString() : new Date().toISOString();
+    
+    // 🔍 Ищем tg:// ссылки в этом сообщении
+    const tgLinks = block.match(/tg:\/\/proxy\?server=[^&\s"&]+&port=\d+&secret=[^\s"&]+/gi) || [];
+    
+    for (const link of tgLinks) {
+      try {
+        const cleanLink = link.replace(/"/g, '').replace(/&amp;/g, '&');
+        const params = new URLSearchParams(cleanLink.replace('tg://proxy?', ''));
+        const server = params.get('server')?.trim();
+        const port = params.get('port')?.trim();
+        const secret = params.get('secret')?.trim();
+        
+        if (server && port && secret?.length >= 16 && server.toLowerCase() !== 'unknown') {
+          proxies.push({
+            type: 'MTProto',
+            server,
+            port,
+            secret,
+            flag: getFlag(server),
+            fetchedAt: messageTime, // ⏰ Время публикации в Telegram!
+            raw: cleanLink
+          });
+          console.log(`✅ [${messageTime}] ${server}:${port}`);
+        }
+      } catch(e) {
+        console.warn('Parse error:', e.message);
+      }
+    }
+    
+    // 🔍 Альтернативный поиск по тексту
+    if (tgLinks.length === 0) {
+      const text = block.replace(/<[^>]+>/g, ' ');
+      const serverMatch = text.match(/(?:server|хост)[:\s]*([a-zA-Z0-9.\-_]+)/i);
+      const portMatch = text.match(/(?:port|порт)[:\s]*(\d{3,5})/i);
+      const secretMatch = text.match(/(?:secret|ключ)[:\s]*([A-Za-z0-9_+\-=/]{16,})/i);
+      
+      if (serverMatch && portMatch && secretMatch) {
+        const server = serverMatch[1].trim();
+        const port = portMatch[1].trim();
+        const secret = secretMatch[1].trim();
+        
+        if (server && port && secret.length >= 16 && server.toLowerCase() !== 'unknown') {
+          proxies.push({
+            type: 'MTProto',
+            server,
+            port,
+            secret,
+            flag: getFlag(server),
+            fetchedAt: messageTime,
+            raw: `tg://proxy?server=${server}&port=${port}&secret=${secret}`
+          });
+        }
+      }
     }
   }
   
-  // 🔍 Стратегия 2: href атрибуты
-  const hrefPattern = /href=["']([^"']*tg:\/\/proxy[^"']*)["']/gi;
-  while ((match = hrefPattern.exec(decoded)) !== null) {
-    try {
-      const link = match[1].replace(/&amp;/g, '&');
-      const params = new URLSearchParams(link.replace('tg://proxy?', ''));
-      const server = params.get('server')?.trim();
-      const port = params.get('port')?.trim();
-      const secret = params.get('secret')?.trim();
-      if (server && port && secret?.length >= 16) {
-        proxies.push({ type:'MTProto', server, port, secret, flag: getFlag(server) });
-      }
-    } catch(e) {}
-  }
   return proxies;
 }
 
@@ -93,92 +125,74 @@ function getFlag(ip) {
   return '🌐';
 }
 
-// 📦 Загружаем предыдущие прокси для сравнения
-function loadPreviousProxies() {
-  try {
-    const filePath = path.join(__dirname, 'proxies.json');
-    if (fs.existsSync(filePath)) {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      if (data.proxies) {
-        const map = new Map();
-        for (const p of data.proxies) {
-          if (p.server && p.port && p.secret) {
-            map.set(makeKey(p.server, p.port, p.secret), p.fetchedAt);
-          }
-        }
-        return map;
-      }
-    }
-  } catch(e) { console.warn('⚠️ Could not load previous proxies:', e.message); }
-  return new Map();
-}
-
 async function main() {
   const now = new Date();
-  const previous = loadPreviousProxies();
-  console.log('🔍 Fetching proxies... Previous known:', previous.size);
+  console.log('🔍 Fetching from ProxyFree_Ru...', now.toISOString());
   
-  let proxies = [], seen = new Set(), newCount = 0;
-  
-  for (const channel of CHANNELS) {
-    if (proxies.length >= 20) break;
-    try {
-      console.log('📡', channel);
-      const html = await fetchUrl(channel);
-      const found = parseProxies(html);
-      
-      for (const p of found) {
-        const key = makeKey(p.server, p.port, p.secret);
-        const shortKey = makeShortKey(p.server, p.port);
-        
-        if (!seen.has(shortKey) && p.secret.length >= 16) {
-          seen.add(shortKey);
-          
-          // 🔥 Если прокси новый ИЛИ секрет изменился — считаем его свежим
-          const wasKnown = previous.has(key);
-          const fetchedAt = wasKnown ? previous.get(key) : now.toISOString();
-          
-          if (!wasKnown) {
-            newCount++;
-            console.log('✨ NEW:', shortKey);
-          }
-          
-          proxies.push({
-            type: 'MTProto', server: p.server, port: p.port, secret: p.secret,
-            flag: p.flag, fetchedAt, raw: `tg://proxy?server=${p.server}&port=${p.port}&secret=${p.secret}`
+  try {
+    const html = await fetchUrl(CHANNEL_URL);
+    console.log('📄 HTML length:', html.length);
+    
+    const proxies = parseProxiesFromChannel(html);
+    console.log('📊 Total parsed:', proxies.length);
+    
+    // 🔥 Сортировка: самые свежие (по времени публикации) первыми
+    proxies.sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
+    
+    // Убираем дубликаты (по server:port)
+    const seen = new Set();
+    const uniqueProxies = [];
+    for (const p of proxies) {
+      const key = `${p.server}:${p.port}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueProxies.push(p);
+      }
+    }
+    
+    console.log('📊 Unique proxies:', uniqueProxies.length);
+    
+    // 🛡️ Фоллбэк
+    let finalProxies = uniqueProxies.slice(0, 12);
+    if (finalProxies.length < 3) {
+      console.log('⚠️ Using fallback');
+      for (const fb of FALLBACK) {
+        const key = `${fb.server}:${fb.port}`;
+        if (!seen.has(key) && finalProxies.length < 12) {
+          seen.add(key);
+          finalProxies.push({
+            ...fb,
+            fetchedAt: now.toISOString(),
+            raw: `tg://proxy?server=${fb.server}&port=${fb.port}&secret=${fb.secret}`
           });
         }
       }
-    } catch (e) { console.error('❌', channel, e.message); }
-  }
-  
-  // 🛡️ Фоллбэк
-  if (proxies.length < 3) {
-    console.log('⚠️ Using fallback');
-    for (const fb of FALLBACK) {
-      const shortKey = makeShortKey(fb.server, fb.port);
-      if (!seen.has(shortKey)) {
-        seen.add(shortKey);
-        proxies.push({ ...fb, fetchedAt: previous.get(makeKey(fb.server, fb.port, fb.secret)) || now.toISOString(), raw: `tg://proxy?server=${fb.server}&port=${fb.port}&secret=${fb.secret}` });
-      }
     }
+    
+    const result = {
+      success: true,
+      count: finalProxies.length,
+      timestamp: now.toISOString(),
+      next_update: new Date(now.getTime() + 10*60*1000).toISOString(),
+      proxies: finalProxies,
+      source: 'ProxyFree_Ru'
+    };
+    
+    fs.writeFileSync('proxies.json', JSON.stringify(result, null, 2));
+    console.log(`💾 Saved ${finalProxies.length} proxies to proxies.json`);
+  } catch (e) {
+    console.error('❌ Critical error:', e.message);
+    // Фоллбэк при ошибке
+    const result = {
+      success: false,
+      count: FALLBACK.length,
+      timestamp: now.toISOString(),
+      proxies: FALLBACK.map(p => ({...p, fetchedAt: now.toISOString(), raw: `tg://proxy?server=${p.server}&port=${p.port}&secret=${p.secret}`})),
+      source: 'fallback',
+      error: e.message
+    };
+    fs.writeFileSync('proxies.json', JSON.stringify(result, null, 2));
   }
-  
-  // 🔥 Сортировка: новые первыми
-  proxies.sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
-  
-  const result = {
-    success: true,
-    count: proxies.length,
-    timestamp: now.toISOString(),
-    new_count: newCount,
-    next_update: new Date(now.getTime() + 10*60*1000).toISOString(),
-    proxies: proxies.slice(0, 12),
-    source: newCount > 0 ? 'telegram' : 'fallback'
-  };
-  
-  fs.writeFileSync(path.join(__dirname, 'proxies.json'), JSON.stringify(result, null, 2));
-  console.log(`💾 Saved ${proxies.length} proxies (${newCount} new)`);
 }
 
 main().catch(console.error);
