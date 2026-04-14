@@ -83,20 +83,21 @@
         PROXIES_URL: "https://artproxz.github.io/telegram-proxy-redirect/proxies.json",
         PING_INTERVAL: 10000,
         MAX_PROXIES: 12,
-        USED_KEY: "tg_used_v300",
+        USED_KEY: "tg_used_v301",
+        SEEN_KEYS: "tg_seen_v301",  // ✅ Для отслеживания новых прокси
         FALLBACK: [
             {type:"MTProto",server:"185.173.36.38",port:"443",secret:"eeRighJJvXrFGRMCIMJdCQ",flag:"🇳"},
-            {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩🇪"},
+            {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩"},
             {type:"MTProto",server:"65.109.153.70",port:"8443",secret:"1320PuNyHw_LQKT_Y7XNJw",flag:"🇫"},
-            {type:"MTProto",server:"51.15.246.20",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇫🇷"},
-            {type:"MTProto",server:"149.154.167.91",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.103",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.92",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.171.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.175.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.175.102",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.200",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"}
+            {type:"MTProto",server:"51.15.246.20",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇫"},
+            {type:"MTProto",server:"149.154.167.91",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.167.103",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.167.92",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.167.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.171.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.175.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.175.102",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
+            {type:"MTProto",server:"149.154.167.200",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"}
         ]
     };
 
@@ -105,9 +106,11 @@
         pingTimer: null, 
         usingFallback: false,
         lastUpdate: null,
-        isLoading: false
+        isLoading: false,
+        previousKeys: new Set()  // ✅ Ключи из предыдущей загрузки
     };
 
+    // ✅ Используемые прокси (ТОЛЬКО для этого пользователя)
     const getUsed = () => { 
         try { return new Set(JSON.parse(localStorage.getItem(CONFIG.USED_KEY) || "[]")); } 
         catch { return new Set(); } 
@@ -122,6 +125,17 @@
     
     const isUsed = (k) => getUsed().has(k);
 
+    // ✅ Ранее увиденные прокси (для уведомления о новых)
+    const getSeenKeys = () => {
+        try { return new Set(JSON.parse(localStorage.getItem(CONFIG.SEEN_KEYS) || "[]")); }
+        catch { return new Set(); }
+    };
+    
+    const saveSeenKeys = (keys) => {
+        try { localStorage.setItem(CONFIG.SEEN_KEYS, JSON.stringify([...keys])); }
+        catch(e) {}
+    };
+
     const notify = (msg, duration = 8000) => {
         const t = document.createElement("div");
         t.className = "toast";
@@ -131,7 +145,7 @@
         setTimeout(() => { if(t.parentNode) t.remove(); }, duration);
     };
 
-    // 📶 Реальный пинг через Image запрос
+    // 📶 Реальный пинг
     const checkPing = async (server, port) => {
         return new Promise(resolve => {
             const start = performance.now();
@@ -140,12 +154,27 @@
             const cleanup = () => { clearTimeout(timeout); img.onload = img.onerror = null; img.src = ""; };
             img.onload = img.onerror = () => { 
                 cleanup(); 
-                const ms = Math.round(performance.now() - start);
-                resolve(ms); 
+                resolve(Math.round(performance.now() - start)); 
             };
-            // Пытаемся достучаться через HTTPS
             img.src = `https://${server}:${port}/favicon.ico?_=${Date.now()}`;
         });
+    };
+
+    // 🕐 Форматирование времени
+    const getTimeAgo = (date) => {
+        if (!date) return '—';
+        const now = new Date();
+        const diff = now - new Date(date);
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (seconds < 60) return 'Только что';
+        if (minutes < 60) return `${minutes} мин. назад`;
+        if (hours < 24) return `${hours} ч. назад`;
+        if (days < 7) return `${days} дн. назад`;
+        return new Date(date).toLocaleDateString('ru-RU');
     };
 
     // 🔄 Загрузка прокси
@@ -165,17 +194,13 @@
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
             
-            const res = await fetch(CONFIG.PROXIES_URL, { 
-                cache: "no-store", 
-                signal: controller.signal 
-            });
+            const res = await fetch(CONFIG.PROXIES_URL, { cache: "no-store", signal: controller.signal });
             clearTimeout(timeout);
             
-            console.log("📥 Статус:", res.status);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             
             const data = await res.json();
-            console.log("📦 Получено:", { success: data.success, count: data.count, source: data.source });
+            console.log("📦 Получено:", { success: data.success, count: data.count });
             
             state.lastUpdate = data.timestamp ? new Date(data.timestamp) : new Date();
             
@@ -184,24 +209,28 @@
                     p.server && p.server !== "Unknown" && p.port && p.secret?.length > 10
                 );
                 
-                // Добавляем время получения для каждого прокси
+                // Добавляем метаданные
                 const newProxies = valid.slice(0, CONFIG.MAX_PROXIES).map(p => ({
                     ...p,
                     key: `${p.server}:${p.port}`,
                     used: isUsed(`${p.server}:${p.port}`),
                     fromFallback: false,
-                    fetchedAt: data.timestamp || new Date().toISOString()
+                    fetchedAt: p.fetchedAt || data.timestamp || new Date().toISOString()
                 }));
                 
-                // 🔥 Сортировка: сначала новые (с огоньком), потом остальные
-                newProxies.sort((a, b) => {
-                    const timeA = new Date(a.fetchedAt).getTime();
-                    const timeB = new Date(b.fetchedAt).getTime();
-                    return timeB - timeA; // Новые первыми
-                });
+                // 🔔 Уведомление ТОЛЬКО о действительно новых прокси
+                const seenKeys = getSeenKeys();
+                const trulyNew = newProxies.filter(p => !seenKeys.has(p.key));
                 
-                const added = newProxies.filter(p => !state.proxies.some(sp => sp.key === p.key));
-                if (added.length > 0) notify(`+${added.length} новых прокси`);
+                if (trulyNew.length > 0) {
+                    notify(`🔥 +${trulyNew.length} новых прокси`);
+                    // Сохраняем новые ключи как "увиденные"
+                    trulyNew.forEach(p => seenKeys.add(p.key));
+                    saveSeenKeys(seenKeys);
+                }
+                
+                // 🔥 Сортировка: сначала новые (по времени добавления), потом старые
+                newProxies.sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
                 
                 state.proxies = newProxies;
                 state.usingFallback = false;
@@ -233,74 +262,53 @@
     // 📶 Пинг-луп
     const startPingLoop = () => {
         clearInterval(state.pingTimer);
-        
         const loop = async () => {
             for (const p of state.proxies) {
                 const el = document.getElementById(`ping-${p.key}`);
                 if (!el) continue;
-                
                 const ms = await checkPing(p.server, p.port);
-                
                 if (el) {
-                    if (ms === null) {
-                        el.className = "ping-badge ping-pending";
-                        el.textContent = "—";
-                    } else if (ms < 200) {
-                        el.className = "ping-badge ping-good";
-                        el.textContent = `${ms}ms`;
-                    } else if (ms < 500) {
-                        el.className = "ping-badge ping-mid";
-                        el.textContent = `${ms}ms`;
-                    } else {
-                        el.className = "ping-badge ping-bad";
-                        el.textContent = `${ms}ms`;
-                    }
+                    if (ms === null) { el.className = "ping-badge ping-pending"; el.textContent = "—"; }
+                    else if (ms < 200) { el.className = "ping-badge ping-good"; el.textContent = `${ms}ms`; }
+                    else if (ms < 500) { el.className = "ping-badge ping-mid"; el.textContent = `${ms}ms`; }
+                    else { el.className = "ping-badge ping-bad"; el.textContent = `${ms}ms`; }
                 }
-                
                 await new Promise(r => setTimeout(r, 150));
             }
         };
-        
         loop();
         state.pingTimer = setInterval(loop, CONFIG.PING_INTERVAL);
     };
 
     // 🎨 Рендер
     const render = () => {
+        // ✅ Сортировка: сначала неиспользованные, потом по новизне
         const sorted = [...state.proxies].sort((a, b) => {
-            // Сначала неиспользованные
-            if (a.used !== b.used) return a.used - b.used;
-            // Потом новые
-            return new Date(b.fetchedAt) - new Date(a.fetchedAt);
+            if (a.used !== b.used) return a.used - b.used; // Неиспользованные первыми
+            return new Date(b.fetchedAt) - new Date(a.fetchedAt); // Новые первыми
         }).slice(0, CONFIG.MAX_PROXIES);
         
-        // Форматируем время последнего обновления
         let lastUpdateText = '--:--';
         if (state.lastUpdate) {
             lastUpdateText = state.lastUpdate.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
+                hour: '2-digit', minute: '2-digit', second: '2-digit' 
             });
         }
         
         let html = `
             <div class="header">
-                <div class="version">v3.1.0</div>
-                <div class="stats">
-                    📡 ${sorted.length}
-                    ${state.usingFallback ? '<span class="fallback-badge">резерв</span>' : ''}
-                </div>
+                <div class="version">v3.2.0</div>
+                <div class="stats">📡 ${sorted.length}${state.usingFallback ? ' <span class="fallback-badge">резерв</span>' : ''}</div>
             </div>
             <h1>MTProto для Telegram</h1>
             <div class="sub">Источник: @ProxyFree_Ru • GitHub Actions каждые 10 мин</div>
-            <div class="last-update">Последнее обновление: <strong>${lastUpdateText}</strong></div>
+            <div class="last-update">Обновлено: <strong>${lastUpdateText}</strong></div>
         `;
         
-        // 🔥 Первые 3 прокси — самые новые
         sorted.forEach((p, index) => {
-            const isHot = index < 3 && !p.fromFallback;
-            const timeAgo = getTimeAgo(new Date(p.fetchedAt));
+            // 🔥 Первые 3 неиспользованных и новых — с огоньком
+            const isHot = index < 3 && !p.used && !p.fromFallback;
+            const addedAgo = getTimeAgo(p.fetchedAt);
             
             html += `
                 <div class="proxy-card ${p.used ? 'used' : 'active'} ${isHot ? 'hot' : ''}" data-key="${p.key}">
@@ -311,7 +319,7 @@
                         <div class="meta">
                             <span class="type-badge">${p.type}</span>
                             <span class="ping-badge ping-pending" id="ping-${p.key}">🔄</span>
-                            <span class="time-badge" title="${new Date(p.fetchedAt).toLocaleString('ru-RU')}">${timeAgo}</span>
+                            <span class="time-badge" title="${new Date(p.fetchedAt).toLocaleString('ru-RU')}">🕐 ${addedAgo}</span>
                         </div>
                     </div>
                     <button class="btn" onclick="connectProxy('${p.raw}')">Подключить</button>
@@ -332,31 +340,17 @@
                     Обновить список
                 </button>
             </div>
-            <div class="footer">Пинг обновляется каждые 10 секунд</div>
+            <div class="footer">Пинг обновляется каждые 10 сек • Состояние "использовано" сохраняется только в вашем браузере</div>
         `;
         
         document.getElementById("app").innerHTML = html;
     };
 
-    // 🕐 Форматирование времени
-    const getTimeAgo = (date) => {
-        const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-        
-        if (minutes < 1) return 'Только что';
-        if (minutes < 60) return `${minutes} мин назад`;
-        if (hours < 24) return `${hours} ч назад`;
-        return `${days} дн назад`;
-    };
-
-    // ✅ Подключение
+    // ✅ Подключение (только для этого пользователя)
     window.connectProxy = (raw) => {
         const m = raw.match(/server=([^&]+)&port=(\d+)/);
         if (m) {
-            markUsed(`${m[1]}:${m[2]}`);
+            markUsed(`${m[1]}:${m[2]}`);  // ✅ Только localStorage этого браузера
             const card = document.querySelector(`.proxy-card[data-key="${m[1]}:${m[2]}"]`);
             if (card) {
                 card.classList.add("used");
@@ -373,9 +367,6 @@
     // 🚀 Старт
     document.addEventListener("DOMContentLoaded", () => {
         console.log("✅ Приложение запущено");
-        console.log("🔗 URL:", CONFIG.PROXIES_URL);
         loadProxies();
     });
 </script>
-</body>
-</html>
