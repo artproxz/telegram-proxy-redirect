@@ -1,9 +1,91 @@
 {
   "success": true,
-  "count": 17,
-  "timestamp": "2026-04-14T06:56:17.529Z",
-  "next_update": "2026-04-14T07:06:18.640Z",
+  "count": 21,
+  "timestamp": "2026-04-14T08:19:06.905Z",
+  "new_count": 9,
+  "next_update": "2026-04-14T08:29:06.905Z",
   "proxies": [
+    {
+      "type": "MTProto",
+      "server": "test.alotaxi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=test.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "158.220.100.132",
+      "port": "443",
+      "secret": "ee37e7aad9447c88cd9421a1916f2147fd636c6f7564666c6172652e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=158.220.100.132&port=443&secret=ee37e7aad9447c88cd9421a1916f2147fd636c6f7564666c6172652e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "194.163.170.186",
+      "port": "443",
+      "secret": "ee6563b226ac5c6c3959481f1605f442f9636c6f7564666c6172652e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=194.163.170.186&port=443&secret=ee6563b226ac5c6c3959481f1605f442f9636c6f7564666c6172652e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "proxyg.site",
+      "port": "443",
+      "secret": "eed68360458af63073bac1394e8c7a48da70726f7879672e73697465",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=proxyg.site&port=443&secret=eed68360458af63073bac1394e8c7a48da70726f7879672e73697465"
+    },
+    {
+      "type": "MTProto",
+      "server": "free.dedus.pro",
+      "port": "443",
+      "secret": "eef97fccdfa1bf4c0de586e6282f07778c706574726f766963682e7275",
+      "flag": "🇩🇪",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=free.dedus.pro&port=443&secret=eef97fccdfa1bf4c0de586e6282f07778c706574726f766963682e7275"
+    },
+    {
+      "type": "MTProto",
+      "server": "31.58.137.124",
+      "port": "443",
+      "secret": "eee2970b9a0d34e958110ee25e8bc8378d6d61696c2e7275",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=31.58.137.124&port=443&secret=eee2970b9a0d34e958110ee25e8bc8378d6d61696c2e7275"
+    },
+    {
+      "type": "MTProto",
+      "server": "213.232.204.27",
+      "port": "443",
+      "secret": "ee78b79b63fea647558240b178cf5a99a87777772e636c6f7564666c6172652e636f6d696d616765732e6170706c652e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=213.232.204.27&port=443&secret=ee78b79b63fea647558240b178cf5a99a87777772e636c6f7564666c6172652e636f6d696d616765732e6170706c652e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "91.108.189.184",
+      "port": "443",
+      "secret": "eee2970b9a0d34e958110ee25e8bc8378d6d61696c2e7275",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=91.108.189.184&port=443&secret=eee2970b9a0d34e958110ee25e8bc8378d6d61696c2e7275"
+    },
+    {
+      "type": "MTProto",
+      "server": "proxystepa.site",
+      "port": "443",
+      "secret": "eed68360458af63073bac1394e8c7a48da70726f787973746570612e73697465",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T08:19:06.905Z",
+      "raw": "tg://proxy?server=proxystepa.site&port=443&secret=eed68360458af63073bac1394e8c7a48da70726f787973746570612e73697465"
+    },
     {
       "type": "MTProto",
       "server": "super.alotaxi.info",
@@ -30,87 +112,6 @@
       "flag": "🌐",
       "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
-    },
-    {
-      "type": "MTProto",
-      "server": "nitro.alotaxi.info",
-      "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=nitro.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
-    },
-    {
-      "type": "MTProto",
-      "server": "alo.acharbashi.info",
-      "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
-    },
-    {
-      "type": "MTProto",
-      "server": "ee.vdl.lat",
-      "port": "443",
-      "secret": "ee1a21752bd8823f6d2e7ac3642f2608ac6170706c652e636f6d",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=ee.vdl.lat&port=443&secret=ee1a21752bd8823f6d2e7ac3642f2608ac6170706c652e636f6d"
-    },
-    {
-      "type": "MTProto",
-      "server": "bestproxy.ink",
-      "port": "443",
-      "secret": "eed68360458af63073bac1394e8c7a48da6265737470726f78792e696e6b",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=bestproxy.ink&port=443&secret=eed68360458af63073bac1394e8c7a48da6265737470726f78792e696e6b"
-    },
-    {
-      "type": "MTProto",
-      "server": "5.22.212.131",
-      "port": "443",
-      "secret": "dd59f5e4be6d8552266f38accfc9f7ff85",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=5.22.212.131&port=443&secret=dd59f5e4be6d8552266f38accfc9f7ff85"
-    },
-    {
-      "type": "MTProto",
-      "server": "oneproxys.best",
-      "port": "443",
-      "secret": "eed68360458af63073bac1394e8c7a48da6f6e6570726f7879732e62657374",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=oneproxys.best&port=443&secret=eed68360458af63073bac1394e8c7a48da6f6e6570726f7879732e62657374"
-    },
-    {
-      "type": "MTProto",
-      "server": "prxyhub.click",
-      "port": "443",
-      "secret": "eed68360458af63073bac1394e8c7a48da707278796875622e636c69636b",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=prxyhub.click&port=443&secret=eed68360458af63073bac1394e8c7a48da707278796875622e636c69636b"
-    },
-    {
-      "type": "MTProto",
-      "server": "proxy.neuropath.ru",
-      "port": "12443",
-      "secret": "df3f51f0829b2dc3e1ec6ad5161c94ee",
-      "flag": "🇷🇺",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=proxy.neuropath.ru&port=12443&secret=df3f51f0829b2dc3e1ec6ad5161c94ee"
-    },
-    {
-      "type": "MTProto",
-      "server": "95.85.250.34",
-      "port": "8443",
-      "secret": "eecdc9b33dd3c9ee78b05f662e2b5fe4126d73646f742e7275",
-      "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:56:17.529Z",
-      "raw": "tg://proxy?server=95.85.250.34&port=8443&secret=eecdc9b33dd3c9ee78b05f662e2b5fe4126d73646f742e7275"
     }
   ],
   "source": "telegram"
