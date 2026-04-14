@@ -2,8 +2,8 @@ name: Fetch Telegram Proxies
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Каждые 10 минут
-  workflow_dispatch:  # Ручной запуск
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
