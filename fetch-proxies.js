@@ -1,10 +1,7 @@
 const https = require('https');
 const fs = require('fs');
 
-// ✅ Источник прокси
 const CHANNEL_URL = 'https://t.me/s/ProxyFree_Ru';
-
-// 🛡️ Фоллбэк-прокси (без пробелов!)
 const FALLBACK = [
   {type: "MTProto", server: "185.173.36.38", port: "443", secret: "eeRighJJvXrFGRMCIMJdCQ", flag: "🇳🇱"},
   {type: "MTProto", server: "91.107.255.159", port: "8443", secret: "eeNEgYdJvXrFGRMCIMJdCQ", flag: "🇩🇪"},
@@ -20,16 +17,12 @@ const FALLBACK = [
   {type: "MTProto", server: "149.154.167.200", port: "8443", secret: "dd070b1b71f82167e279061e9b53f4f1", flag: "🇬🇧"}
 ];
 
-// 🏳️ Карта флагов (исправлены обрезанные эмодзи)
 const FLAG_MAP = {
   '185.': '🇳🇱', '91.107.': '🇩🇪', '65.109.': '🇫🇮', '51.15.': '🇫🇷',
   '149.154.': '🇬🇧', '.ru': '🇷🇺', '.de': '🇩🇪', '.nl': '🇳🇱',
   '.fr': '🇫🇷', '.fi': '🇫🇮', '.uk': '🇬🇧', '.us': '🇺🇸', '.sg': '🇸🇬',
   '.ir': '🇮🇷', '.ae': '🇦🇪', '.tr': '🇹🇷', '.pl': '🇵🇱', '.by': '🇧🇾'
 };
-
-// 🔁 Глобальный кэш для отслеживания "первого появления"
-let knownProxiesCache = new Map();
 
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
@@ -48,22 +41,23 @@ function fetchUrl(url) {
   });
 }
 
-// 🔍 Парсинг прокси с привязкой ко времени публикации
 function parseProxiesFromChannel(html) {
   const proxies = [];
   const decoded = html
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 
   const messageBlocks = decoded.split(/<div[^>]*class="[^"]*tgme_widget_message[^"]*"[^>]*>/i).slice(1);
   console.log(`📦 Found ${messageBlocks.length} message blocks`);
 
   for (const block of messageBlocks) {
-    // 🕐 Время публикации
     const timeMatch = block.match(/<time[^>]*datetime="([^"]+)"/);
     const messageTime = timeMatch ? new Date(timeMatch[1]).toISOString() : new Date().toISOString();
 
-    // 🔍 Поиск tg://proxy ссылок (исправлен регекс — без пробелов внутри)
+    // 🔍 Ищем tg://proxy ссылки (исправленная регулярка — БЕЗ пробелов внутри)
     const tgLinks = block.match(/tg:\/\/proxy\?server=[^&\s"&]+&port=\d+&secret=[^\s"&]+/gi) || [];
 
     for (const link of tgLinks) {
@@ -81,7 +75,7 @@ function parseProxiesFromChannel(html) {
             port,
             secret,
             flag: getFlag(server),
-            lastPosted: messageTime,
+            fetchedAt: messageTime,
             raw: cleanLink
           });
           console.log(`✅ [${messageTime}] ${server}:${port}`);
@@ -91,7 +85,7 @@ function parseProxiesFromChannel(html) {
       }
     }
 
-    // 🔍 Альтернативный парсинг из текста
+    // 🔍 Альтернативный парсинг из текста (если tg:// ссылки не найдены)
     if (tgLinks.length === 0) {
       const text = block.replace(/<[^>]+>/g, ' ');
       const serverMatch = text.match(/(?:server|хост)[:\s]*([a-zA-Z0-9.\-_]+)/i);
@@ -110,7 +104,7 @@ function parseProxiesFromChannel(html) {
             port,
             secret,
             flag: getFlag(server),
-            lastPosted: messageTime,
+            fetchedAt: messageTime,
             raw: `tg://proxy?server=${server}&port=${port}&secret=${secret}`
           });
         }
@@ -127,24 +121,9 @@ function getFlag(ip) {
   return '🌐';
 }
 
-// 🔑 Уникальный ключ прокси (сервер:порт:секрет)
-function getProxyKey(proxy) {
-  return `${proxy.server}:${proxy.port}:${proxy.secret}`;
-}
-
 async function main() {
   const now = new Date();
   console.log('🔍 Fetching from ProxyFree_Ru...', now.toISOString());
-
-  // 🔄 Загружаем кэш
-  try {
-    const cacheRaw = fs.readFileSync('proxies-cache.json', 'utf8');
-    const cache = JSON.parse(cacheRaw);
-    knownProxiesCache = new Map(Object.entries(cache));
-    console.log(`📥 Loaded ${knownProxiesCache.size} known proxies from cache`);
-  } catch (e) {
-    console.log('ℹ️ No cache found, starting fresh');
-  }
 
   try {
     const html = await fetchUrl(CHANNEL_URL);
@@ -153,37 +132,14 @@ async function main() {
     const proxies = parseProxiesFromChannel(html);
     console.log('📊 Total parsed:', proxies.length);
 
-    // 🧠 Обогащаем прокси данными о "первом появлении"
-    const enriched = proxies.map(p => {
-      const key = getProxyKey(p);
-      const isFirstTime = !knownProxiesCache.has(key);
-      
-      if (isFirstTime) {
-        knownProxiesCache.set(key, {
-          firstSeen: now.toISOString(),
-          server: p.server,
-          port: p.port
-        });
-      }
-      
-      const firstSeen = knownProxiesCache.get(key)?.firstSeen || now.toISOString();
-      const ageMs = now - new Date(firstSeen);
-      const ageHours = Math.round(ageMs / (1000 * 60 * 60));
-      
-      return {
-        ...p,
-        firstSeen,
-        ageHours,
-        isNew: ageHours < 2,
-        repostCount: ageHours > 0 ? Math.floor(ageHours / 2) : 0
-      };
-    });
+    // Сортировка: свежие по времени публикации — первыми
+    proxies.sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
 
-    // 🗑️ Убираем дубликаты по ключу server:port:secret
+    // Убираем дубликаты по server:port (первый — самый свежий)
     const seen = new Set();
     const uniqueProxies = [];
-    for (const p of enriched) {
-      const key = getProxyKey(p);
+    for (const p of proxies) {
+      const key = `${p.server}:${p.port}`;
       if (!seen.has(key)) {
         seen.add(key);
         uniqueProxies.push(p);
@@ -191,41 +147,29 @@ async function main() {
     }
     console.log('📊 Unique proxies:', uniqueProxies.length);
 
-    // 🔥 Сортировка: сначала новые, потом по возрасту
-    uniqueProxies.sort((a, b) => {
-      if (a.isNew && !b.isNew) return -1;
-      if (!a.isNew && b.isNew) return 1;
-      return new Date(a.firstSeen) - new Date(b.firstSeen);
-    });
-
-    // 🛡️ Фоллбэк
+    // 🛡️ Фоллбэк если мало прокси
     let finalProxies = uniqueProxies.slice(0, 12);
     if (finalProxies.length < 3) {
       console.log('⚠️ Using fallback proxies');
       for (const fb of FALLBACK) {
-        const key = getProxyKey(fb);
+        const key = `${fb.server}:${fb.port}`;
         if (!seen.has(key) && finalProxies.length < 12) {
           seen.add(key);
           finalProxies.push({
             ...fb,
-            firstSeen: now.toISOString(),
-            lastPosted: now.toISOString(),
-            ageHours: 999,
-            isNew: false,
-            repostCount: 0,
-            flag: fb.flag || getFlag(fb.server),
+            fetchedAt: now.toISOString(),
             raw: `tg://proxy?server=${fb.server}&port=${fb.port}&secret=${fb.secret}`
           });
         }
       }
     }
 
-    // 💾 Результат (БЕЗ ПРОБЕЛОВ в ключах!)
+    // 💾 Результат — БЕЗ ПРОБЕЛОВ в ключах и значениях!
     const result = {
       success: true,
       count: finalProxies.length,
       timestamp: now.toISOString(),
-      next_update: new Date(now.getTime() + 30*60*1000).toISOString(),
+      next_update: new Date(now.getTime() + 10*60*1000).toISOString(),
       proxies: finalProxies,
       source: 'ProxyFree_Ru'
     };
@@ -233,27 +177,18 @@ async function main() {
     fs.writeFileSync('proxies.json', JSON.stringify(result, null, 2));
     console.log(`💾 Saved ${finalProxies.length} proxies to proxies.json`);
 
-    // 💾 Обновляем кэш
-    const cacheObj = Object.fromEntries(knownProxiesCache);
-    fs.writeFileSync('proxies-cache.json', JSON.stringify(cacheObj, null, 2));
-    console.log(`💾 Updated cache with ${knownProxiesCache.size} entries`);
-
   } catch (e) {
     console.error('❌ Critical error:', e.message);
     
+    // Фоллбэк при ошибке
     const result = {
       success: false,
       count: FALLBACK.length,
       timestamp: now.toISOString(),
-      next_update: new Date(now.getTime() + 30*60*1000).toISOString(),
+      next_update: new Date(now.getTime() + 10*60*1000).toISOString(),
       proxies: FALLBACK.map(p => ({
         ...p,
-        firstSeen: now.toISOString(),
-        lastPosted: now.toISOString(),
-        ageHours: 999,
-        isNew: false,
-        repostCount: 0,
-        flag: p.flag || getFlag(p.server),
+        fetchedAt: now.toISOString(),
         raw: `tg://proxy?server=${p.server}&port=${p.port}&secret=${p.secret}`
       })),
       source: 'fallback',
