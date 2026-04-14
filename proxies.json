@@ -1,21 +1,17 @@
 {
   "success": true,
   "count": 6,
-  "timestamp": "2026-04-14T11:15:28.960Z",
-  "next_update": "2026-04-14T11:45:28.960Z",
+  "timestamp": "2026-04-14T11:44:40.467Z",
+  "next_update": "2026-04-14T11:54:40.467Z",
   "proxies": [
     {
       "type": "MTProto",
-      "server": "super.alotaxi.info",
+      "server": "dedicated.love-internet.xyz",
       "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.867Z",
-      "raw": "tg://proxy?server=super.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
+      "fetchedAt": "2026-04-14T11:44:41.499Z",
+      "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
       "type": "MTProto",
@@ -23,51 +19,8 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.868Z",
-      "raw": "tg://proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
-    },
-    {
-      "type": "MTProto",
-      "server": "dedicated.love-internet.xyz",
-      "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.868Z",
-      "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
-    },
-    {
-      "type": "MTProto",
-      "server": "nitro.alotaxi.info",
-      "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.868Z",
-      "raw": "tg://proxy?server=nitro.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
-    },
-    {
-      "type": "MTProto",
-      "server": "alo.acharbashi.info",
-      "port": "4515",
-      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.871Z",
-      "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
+      "fetchedAt": "2026-04-14T11:44:41.499Z",
+      "raw": "tg://proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
       "type": "MTProto",
@@ -75,12 +28,35 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "lastPosted": "2026-04-14T11:15:29.871Z",
-      "raw": "tg://proxy?server=test.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
-      "firstSeen": "2026-04-14T11:15:28.960Z",
-      "ageHours": 0,
-      "isNew": true,
-      "repostCount": 0
+      "fetchedAt": "2026-04-14T11:44:41.499Z",
+      "raw": "tg://proxy?server=test.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "nitro.alotaxi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T11:44:41.498Z",
+      "raw": "tg://proxy?server=nitro.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "alo.acharbashi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T11:44:41.498Z",
+      "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
+    },
+    {
+      "type": "MTProto",
+      "server": "super.alotaxi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275",
+      "flag": "🌐",
+      "fetchedAt": "2026-04-14T11:44:41.495Z",
+      "raw": "tg://proxy?server=super.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275"
     }
   ],
   "source": "ProxyFree_Ru"
