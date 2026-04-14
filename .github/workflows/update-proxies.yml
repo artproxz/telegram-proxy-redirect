@@ -2,12 +2,12 @@ name: Fetch Telegram Proxies
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 🔁 Каждые 30 минут (экономия лимитов)
-  workflow_dispatch:        # 🎯 Ручной запуск
+    - cron: '*/30 * * * *'  # Каждые 30 минут
+  workflow_dispatch:        # Ручной запуск (кнопка)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true  # 🗑️ Отменяем старые запуски
+  cancel-in-progress: true  # ✅ Отменяем зависшие запуски
 
 jobs:
   fetch:
@@ -18,7 +18,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      - uses: actions/checkout@v4  # ✅ Стабильная версия
+      - uses: actions/checkout@v4  # ✅ v4 — стабильная версия
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,19 +28,19 @@ jobs:
       - name: Fetch proxies
         run: node fetch-proxies.js
       
-      - name: Commit and push ONLY if content changed
+      - name: Commit and push if changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add proxies.json
           
-          # 🔍 Проверяем, изменилось ли СОДЕРЖИМОЕ (не просто время)
-          if ! git diff --staged --quiet -- proxies.json; then
-            echo "✅ Changes detected in proxies.json"
-            git commit -m "chore(proxies): auto-update $(date +'%Y-%m-%d %H:%M') [skip ci]"
+          if ! git diff --staged --quiet; then
+            echo "Changes detected"
+            # ✅ [skip ci] предотвращает рекурсивный запуск
+            git commit -m "chore: update proxies $(date +'%Y-%m-%d %H:%M') [skip ci]"
             git push
           else
-            echo "ℹ️ No meaningful changes — skipping commit"
+            echo "No changes"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
