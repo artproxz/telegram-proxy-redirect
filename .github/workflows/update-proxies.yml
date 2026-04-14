@@ -2,10 +2,7 @@ name: Fetch Telegram Proxies
 
 on:
   schedule:
-    # ✅ КАЖДЫЕ 10 МИНУТ - ПРОВЕРЕНО!
-    # Формат: минута час день месяц день-недели
-    # */10 = каждые 10 минут
-    - cron: '*/10 * * * *'
+    - cron: '*/10 * * * *'  # ✅ КАЖДЫЕ 10 МИНУТ
   workflow_dispatch:  # Ручной запуск
 
 jobs:
@@ -15,7 +12,7 @@ jobs:
       contents: write
     
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Убирает предупреждение
     
     steps:
       - uses: actions/checkout@v5
