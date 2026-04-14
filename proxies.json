@@ -1,8 +1,8 @@
 {
   "success": true,
-  "count": 16,
-  "timestamp": "2026-04-14T06:28:00.745Z",
-  "next_update": "2026-04-14T06:38:01.799Z",
+  "count": 17,
+  "timestamp": "2026-04-14T06:56:17.529Z",
+  "next_update": "2026-04-14T07:06:18.640Z",
   "proxies": [
     {
       "type": "MTProto",
@@ -10,7 +10,7 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=super.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e6d61782e7275"
     },
     {
@@ -19,7 +19,7 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
@@ -28,7 +28,7 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
@@ -37,7 +37,7 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=nitro.alotaxi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
@@ -46,7 +46,7 @@
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
@@ -55,7 +55,7 @@
       "port": "443",
       "secret": "ee1a21752bd8823f6d2e7ac3642f2608ac6170706c652e636f6d",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=ee.vdl.lat&port=443&secret=ee1a21752bd8823f6d2e7ac3642f2608ac6170706c652e636f6d"
     },
     {
@@ -64,7 +64,7 @@
       "port": "443",
       "secret": "eed68360458af63073bac1394e8c7a48da6265737470726f78792e696e6b",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=bestproxy.ink&port=443&secret=eed68360458af63073bac1394e8c7a48da6265737470726f78792e696e6b"
     },
     {
@@ -73,7 +73,7 @@
       "port": "443",
       "secret": "dd59f5e4be6d8552266f38accfc9f7ff85",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=5.22.212.131&port=443&secret=dd59f5e4be6d8552266f38accfc9f7ff85"
     },
     {
@@ -82,7 +82,7 @@
       "port": "443",
       "secret": "eed68360458af63073bac1394e8c7a48da6f6e6570726f7879732e62657374",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=oneproxys.best&port=443&secret=eed68360458af63073bac1394e8c7a48da6f6e6570726f7879732e62657374"
     },
     {
@@ -91,7 +91,7 @@
       "port": "443",
       "secret": "eed68360458af63073bac1394e8c7a48da707278796875622e636c69636b",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=prxyhub.click&port=443&secret=eed68360458af63073bac1394e8c7a48da707278796875622e636c69636b"
     },
     {
@@ -100,7 +100,7 @@
       "port": "12443",
       "secret": "df3f51f0829b2dc3e1ec6ad5161c94ee",
       "flag": "🇷🇺",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=proxy.neuropath.ru&port=12443&secret=df3f51f0829b2dc3e1ec6ad5161c94ee"
     },
     {
@@ -109,7 +109,7 @@
       "port": "8443",
       "secret": "eecdc9b33dd3c9ee78b05f662e2b5fe4126d73646f742e7275",
       "flag": "🌐",
-      "fetchedAt": "2026-04-14T06:28:00.745Z",
+      "fetchedAt": "2026-04-14T06:56:17.529Z",
       "raw": "tg://proxy?server=95.85.250.34&port=8443&secret=eecdc9b33dd3c9ee78b05f662e2b5fe4126d73646f742e7275"
     }
   ],
