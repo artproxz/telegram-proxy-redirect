@@ -4,405 +4,363 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark" />
-  <title>Рабочие Telegram Proxy</title>
+  <title>Telegram Proxy</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap');
 
     :root {
-      --bg: #050816;
-      --panel: rgba(14, 22, 42, .78);
-      --card: rgba(15, 23, 42, .88);
-      --card2: rgba(20, 32, 58, .96);
+      --bg: #070a12;
+      --panel: #101724;
+      --card: #141d2b;
+      --card-soft: #192437;
       --line: rgba(148, 163, 184, .18);
       --text: #f8fafc;
-      --muted: #94a3b8;
-      --muted2: #64748b;
-      --green: #34d399;
-      --blue: #38bdf8;
-      --yellow: #facc15;
+      --muted: #91a0b7;
+      --green: #39e58c;
+      --green2: #10b981;
+      --orange: #ffb020;
       --red: #fb7185;
-      --shadow: 0 24px 80px rgba(0, 0, 0, .45);
+      --shadow: 0 20px 70px rgba(0, 0, 0, .36);
     }
 
     * { box-sizing: border-box; }
-    html { background: var(--bg); min-height: 100%; }
+    html, body { min-height: 100%; }
     body {
       margin: 0;
-      min-height: 100vh;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, .24), transparent 32%),
-        radial-gradient(circle at 88% 18%, rgba(52, 211, 153, .18), transparent 30%),
-        linear-gradient(135deg, #050816 0%, #0f172a 52%, #020617 100%);
+        radial-gradient(circle at 12% 0%, rgba(16,185,129,.18), transparent 34%),
+        radial-gradient(circle at 88% 8%, rgba(56,189,248,.12), transparent 32%),
+        var(--bg);
       overflow-x: hidden;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-      background-size: 46px 46px;
-      mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
-    }
-
     .page {
-      width: min(980px, calc(100% - 28px));
+      width: min(860px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 28px 0 42px;
-      position: relative;
+      padding: 32px 0 44px;
     }
 
     .top {
-      display: grid;
-      grid-template-columns: 1fr 280px;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .glass {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      border-radius: 28px;
-    }
-
-    .hero {
-      padding: 26px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      right: -80px;
-      top: -100px;
-      width: 250px;
-      height: 250px;
-      background: radial-gradient(circle, rgba(52,211,153,.28), transparent 70%);
-      border-radius: 999px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      border-radius: 999px;
-      padding: 7px 11px;
-      font-size: .78rem;
-      font-weight: 900;
-      border: 1px solid rgba(52,211,153,.22);
-      background: rgba(52,211,153,.10);
-      color: #bbf7d0;
-      white-space: nowrap;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
     }
 
     h1 {
-      margin: 18px 0 8px;
-      font-size: clamp(2.15rem, 6vw, 4.4rem);
-      line-height: .92;
-      letter-spacing: -.07em;
-      max-width: 720px;
-      position: relative;
-      z-index: 1;
+      margin: 0 0 8px;
+      font-size: clamp(2.3rem, 7vw, 4.8rem);
+      line-height: .9;
+      letter-spacing: -.075em;
     }
 
-    .lead {
+    .subtitle {
       margin: 0;
-      color: #cbd5e1;
-      line-height: 1.55;
-      max-width: 640px;
-      font-size: 1rem;
-      position: relative;
-      z-index: 1;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.45;
     }
 
     .status {
-      padding: 22px;
-      display: grid;
-      align-content: space-between;
-      min-height: 210px;
-    }
-
-    .status-label {
-      color: var(--muted);
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      font-weight: 900;
-    }
-
-    .status-value {
-      font-size: 3.2rem;
-      font-weight: 900;
-      letter-spacing: -.06em;
-      margin-top: 9px;
-    }
-
-    .status-note {
-      color: #cbd5e1;
-      line-height: 1.45;
-      font-size: .9rem;
-      margin-top: 8px;
-    }
-
-    .bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      padding: 13px;
-      margin-bottom: 14px;
-      border-radius: 24px;
-      background: rgba(15, 23, 42, .68);
-      border: 1px solid var(--line);
-    }
-
-    .bar-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .mini {
-      color: var(--muted);
-      font-size: .86rem;
-      font-weight: 700;
-    }
-
-    .btn {
-      appearance: none;
-      border: 0;
-      border-radius: 15px;
-      padding: 12px 15px;
-      font-weight: 900;
-      color: #fff;
-      background: linear-gradient(135deg, #10b981, #059669);
-      cursor: pointer;
-      transition: transform .18s, filter .18s, opacity .18s, box-shadow .18s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      text-decoration: none;
-      white-space: nowrap;
-      box-shadow: 0 14px 30px rgba(16,185,129,.20);
-    }
-    .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
-    .btn:active { transform: translateY(0); }
-    .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn.secondary { background: rgba(148,163,184,.14); color: #e2e8f0; box-shadow: none; border: 1px solid rgba(148,163,184,.20); }
-    .btn.used { background: rgba(71,85,105,.72); box-shadow: none; }
-
-    .board {
-      padding: 14px;
-      border-radius: 28px;
-      background: var(--panel);
+      min-width: 188px;
+      padding: 14px 15px;
+      border-radius: 20px;
+      background: rgba(16, 23, 36, .84);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
+      text-align: right;
     }
 
-    .cards {
+    .status strong {
+      display: block;
+      font-size: 1.65rem;
+      line-height: 1;
+      letter-spacing: -.04em;
+      color: var(--green);
+    }
+
+    .status span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      min-height: 46px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 800;
+    }
+
+    .buttons { display: flex; gap: 8px; }
+
+    button, .connect {
+      border: 0;
+      appearance: none;
+      border-radius: 14px;
+      padding: 11px 14px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+    }
+
+    button:hover, .connect:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active, .connect:active { transform: translateY(0); }
+    button.secondary {
+      background: rgba(148, 163, 184, .12);
+      border: 1px solid rgba(148, 163, 184, .16);
+      color: #e2e8f0;
+    }
+    button:disabled { opacity: .55; cursor: default; transform: none; }
+
+    .board {
       display: grid;
       gap: 10px;
     }
 
-    .proxy-card {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 145px 210px;
-      gap: 14px;
-      align-items: center;
-      min-height: 104px;
-      padding: 16px;
-      border-radius: 24px;
-      background: var(--card);
-      border: 1px solid rgba(148,163,184,.16);
+    .card {
       position: relative;
+      min-height: 86px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px 148px;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, var(--card), #111827);
+      border: 1px solid var(--line);
+      box-shadow: 0 14px 40px rgba(0,0,0,.20);
       overflow: hidden;
-      transition: transform .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease, filter .2s ease;
     }
 
-    .proxy-card:hover { transform: translateY(-2px); background: var(--card2); border-color: rgba(56,189,248,.32); }
-    .proxy-card.used { opacity: .52; filter: grayscale(.72); }
-    .proxy-card.is-new { animation: cardNew 1.15s ease both; border-color: rgba(52,211,153,.72); }
-    .proxy-card.is-updated { animation: cardUpdated 1.15s ease both; border-color: rgba(250,204,21,.72); }
-
-    @keyframes cardNew {
-      0% { transform: scale(.97); box-shadow: 0 0 0 rgba(52,211,153,0); }
-      45% { transform: scale(1.012); box-shadow: 0 0 42px rgba(52,211,153,.22); }
-      100% { transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); }
+    .card.hot {
+      border-color: rgba(255, 176, 32, .55);
+      box-shadow: 0 0 0 1px rgba(255,176,32,.08), 0 18px 54px rgba(255,176,32,.10);
     }
 
-    @keyframes cardUpdated {
-      0% { transform: translateY(8px); box-shadow: 0 0 0 rgba(250,204,21,0); }
-      45% { transform: translateY(-2px); box-shadow: 0 0 42px rgba(250,204,21,.18); }
-      100% { transform: translateY(0); box-shadow: 0 0 0 rgba(250,204,21,0); }
+    .card.hot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,176,32,.95) 38%, rgba(57,229,140,.75) 52%, transparent 70%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: edge 2.8s linear infinite;
+      pointer-events: none;
     }
+
+    @keyframes edge { to { filter: hue-rotate(30deg); transform: rotate(360deg); } }
 
     .server {
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 13px;
+      gap: 12px;
     }
 
-    .flag { font-size: 2.25rem; line-height: 1; filter: drop-shadow(0 8px 18px rgba(0,0,0,.30)); }
-    .host {
-      font-size: 1.05rem;
+    .flag {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      font-size: 1.55rem;
+    }
+
+    .name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 1.03rem;
       font-weight: 900;
+    }
+
+    .host {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .sub {
+
+    .fire {
+      flex: 0 0 auto;
+      font-size: 1rem;
+      filter: drop-shadow(0 0 8px rgba(255,176,32,.55));
+    }
+
+    .port {
+      margin-top: 5px;
       color: var(--muted);
-      font-size: .84rem;
-      margin-top: 4px;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: .82rem;
     }
 
     .ping {
+      justify-self: end;
       text-align: right;
+      min-width: 126px;
+      font-variant-numeric: tabular-nums;
     }
+
     .ping-value {
-      font-size: 2rem;
+      display: inline-block;
+      min-width: 96px;
+      font-size: 1.85rem;
       line-height: 1;
       font-weight: 900;
-      letter-spacing: -.06em;
+      letter-spacing: -.045em;
+      color: #bbf7d0;
     }
-    .ping.good .ping-value { color: #86efac; }
-    .ping.mid .ping-value { color: #fde68a; }
-    .ping.bad .ping-value { color: #fecdd3; }
+
+    .ping-value.mid { color: #fde68a; }
+    .ping-value.bad { color: #fecdd3; }
+
     .ping-label {
-      margin-top: 6px;
+      height: 17px;
+      margin-top: 5px;
       color: var(--muted);
-      font-size: .76rem;
+      font-size: .75rem;
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: .06em;
+      letter-spacing: .08em;
     }
 
     .actions {
+      justify-self: end;
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
+      grid-template-columns: 1fr 42px;
+      gap: 7px;
+      width: 148px;
     }
 
-    .check {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 999px;
-      padding: 7px 10px;
-      font-size: .75rem;
-      font-weight: 900;
-      color: #bbf7d0;
-      background: rgba(52,211,153,.10);
-      border: 1px solid rgba(52,211,153,.22);
+    .copy {
+      width: 42px;
+      padding-inline: 0;
     }
 
-    .empty, .loader {
-      padding: 40px 18px;
-      text-align: center;
+    .card.used {
+      opacity: .45;
+      filter: grayscale(.7);
+    }
+    .card.used .connect { background: rgba(71,85,105,.9); }
+
+    .empty {
+      padding: 44px 18px;
+      border-radius: 24px;
+      background: rgba(16,23,36,.78);
+      border: 1px dashed rgba(148,163,184,.24);
       color: var(--muted);
-      border-radius: 22px;
-      background: rgba(2,6,23,.24);
-      border: 1px dashed rgba(148,163,184,.22);
+      text-align: center;
+      font-weight: 800;
+      line-height: 1.5;
     }
 
-    .spinner {
-      width: 30px;
-      height: 30px;
-      margin: 0 auto 12px;
-      border-radius: 999px;
-      border: 3px solid rgba(148,163,184,.22);
-      border-top-color: var(--blue);
-      animation: spin .85s linear infinite;
-    }
-
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .toast-stack {
-      position: fixed;
-      right: 18px;
-      top: 18px;
-      z-index: 9999;
-      display: grid;
-      gap: 10px;
-      width: min(360px, calc(100% - 36px));
-    }
     .toast {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 15px;
-      border-radius: 18px;
-      background: rgba(15, 23, 42, .96);
-      border: 1px solid rgba(52,211,153,.28);
-      box-shadow: 0 18px 50px rgba(0,0,0,.35);
-      transform: translateX(115%);
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      max-width: calc(100% - 32px);
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(16,23,36,.96);
+      border: 1px solid rgba(57,229,140,.22);
+      color: #d1fae5;
+      font-weight: 900;
+      box-shadow: var(--shadow);
       opacity: 0;
-      transition: .34s ease;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: .18s ease;
+      z-index: 10;
     }
-    .toast.show { transform: translateX(0); opacity: 1; }
-    .toast strong { display: block; font-size: .92rem; }
-    .toast span { color: var(--muted); font-size: .78rem; display: block; margin-top: 3px; }
-    .toast button { color: #cbd5e1; background: transparent; border: 0; cursor: pointer; font-size: 1.1rem; }
+    .toast.show { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 820px) {
-      .top { grid-template-columns: 1fr; }
-      .proxy-card { grid-template-columns: 1fr; align-items: stretch; }
-      .ping { text-align: left; }
-      .actions { grid-template-columns: 1fr auto; }
-      .bar { align-items: flex-start; flex-direction: column; }
-      .bar .btn { width: 100%; }
+    @media (max-width: 720px) {
+      .top { align-items: stretch; flex-direction: column; }
+      .status { text-align: left; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .buttons { width: 100%; }
+      .buttons button { flex: 1; }
+      .card { grid-template-columns: 1fr; align-items: stretch; }
+      .ping, .actions { justify-self: stretch; text-align: left; width: auto; }
+      .actions { grid-template-columns: 1fr 48px; }
+      .copy { width: 48px; }
     }
 
-    @media (max-width: 520px) {
-      .page { width: min(100% - 18px, 980px); padding-top: 14px; }
-      .hero, .status, .board { border-radius: 22px; }
-      .hero, .status { padding: 18px; }
-      .proxy-card { border-radius: 20px; }
-      .actions { grid-template-columns: 1fr; }
-      .actions .btn { width: 100%; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="toast-stack" id="toastStack"></div>
-  <main class="page" id="app">
-    <div class="loader"><div class="spinner"></div>Загружаю рабочие прокси…</div>
+  <main class="page">
+    <section class="top">
+      <div>
+        <h1>Telegram Proxy</h1>
+        <p class="subtitle">Только реально проверенные MTProto. Без лишнего шума.</p>
+      </div>
+      <div class="status">
+        <strong id="count">—</strong>
+        <span id="statusText">загружаю</span>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="meta" id="meta">Проверяю список…</div>
+      <div class="buttons">
+        <button class="secondary" id="resetBtn" type="button">Сбросить</button>
+        <button id="refreshBtn" type="button">Обновить</button>
+      </div>
+    </section>
+
+    <section class="board" id="board"></section>
   </main>
+  <div class="toast" id="toast"></div>
 
   <script>
     const CONFIG = {
-      PROXIES_URL: './proxies.json',
-      AUTO_REFRESH_MS: 10 * 1000,
-      SNAPSHOT_KEY: 'mtproto_proxy_snapshot_strict_v1',
-      USED_KEY: 'mtproto_proxy_used_strict_v1',
-      NOTIFY_KEY: 'mtproto_proxy_notifications_strict_v1'
+      url: './proxies.json',
+      refreshMs: 10_000,
+      usedKey: 'telegram_proxy_used_minimal_v2',
+      orderKey: 'telegram_proxy_order_minimal_v2'
     };
 
     const state = {
       data: null,
       proxies: [],
       loading: false,
-      autoTimer: null,
-      tickTimer: null,
-      lastUiRefreshAt: null,
-      nextUiRefreshAt: null,
-      hasSnapshot: false
+      renderedIds: []
     };
+
+    const $ = selector => document.querySelector(selector);
+    const board = $('#board');
+    const countEl = $('#count');
+    const statusText = $('#statusText');
+    const meta = $('#meta');
+    const refreshBtn = $('#refreshBtn');
+    const resetBtn = $('#resetBtn');
 
     const escapeHtml = value => String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -419,251 +377,188 @@
       try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
     };
 
-    const getUsed = () => new Set(readJson(CONFIG.USED_KEY, []));
+    const getUsed = () => new Set(readJson(CONFIG.usedKey, []));
     const markUsed = id => {
       const used = getUsed();
       used.add(id);
-      writeJson(CONFIG.USED_KEY, [...used]);
+      writeJson(CONFIG.usedKey, [...used]);
     };
 
-    const formatFull = dateLike => {
-      if (!dateLike) return '—';
-      const date = new Date(dateLike);
-      if (Number.isNaN(date.getTime())) return '—';
+    const formatDate = value => {
+      const date = new Date(value);
+      if (!value || Number.isNaN(date.getTime())) return '—';
       return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
 
-    const secondsLeft = () => {
-      if (!state.nextUiRefreshAt) return 10;
-      return Math.max(0, Math.ceil((state.nextUiRefreshAt - Date.now()) / 1000));
-    };
+    const linkFor = proxy => proxy.raw || `tg://proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
+    const webLinkFor = proxy => `https://t.me/proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
 
     const pingClass = ping => {
       if (typeof ping !== 'number') return 'bad';
-      if (ping < 200) return 'good';
-      if (ping < 500) return 'mid';
+      if (ping <= 350) return '';
+      if (ping <= 750) return 'mid';
       return 'bad';
     };
 
-    const getSnapshot = () => readJson(CONFIG.SNAPSHOT_KEY, {});
-    const saveSnapshot = proxies => {
-      const snap = {};
-      proxies.forEach(p => {
-        snap[p.id] = {
-          fingerprint: p.fingerprint || `${p.server}:${p.port}:${p.secret}`,
-          updatedAt: p.updatedAt || null,
-          checkedAt: p.checkedAt || null,
-          pingMs: p.pingMs ?? null
-        };
-      });
-      writeJson(CONFIG.SNAPSHOT_KEY, snap);
+    const toast = text => {
+      const el = $('#toast');
+      el.textContent = text;
+      el.classList.add('show');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('show'), 2200);
     };
 
-    const detectUiEvents = proxies => {
-      const snap = getSnapshot();
-      state.hasSnapshot = Object.keys(snap).length > 0;
-      return proxies.map(proxy => {
-        const old = snap[proxy.id];
-        let uiEvent = '';
-        if (!old) uiEvent = 'new';
-        else if (old.fingerprint !== (proxy.fingerprint || `${proxy.server}:${proxy.port}:${proxy.secret}`)) uiEvent = 'updated';
-        else if (old.updatedAt && proxy.updatedAt && old.updatedAt !== proxy.updatedAt && proxy.changeType && proxy.changeType !== 'same') uiEvent = proxy.changeType;
-        else if (typeof old.pingMs === 'number' && typeof proxy.pingMs === 'number' && Math.abs(old.pingMs - proxy.pingMs) >= 80) uiEvent = 'latency_changed';
-        return { ...proxy, uiEvent, used: getUsed().has(proxy.id) };
-      });
-    };
-
-    const notify = (title, text = '', system = true) => {
-      const root = document.getElementById('toastStack');
-      const item = document.createElement('div');
-      item.className = 'toast';
-      item.innerHTML = `<div><strong>${escapeHtml(title)}</strong>${text ? `<span>${escapeHtml(text)}</span>` : ''}</div><button type="button" aria-label="Закрыть">×</button>`;
-      item.querySelector('button').addEventListener('click', () => item.remove());
-      root.appendChild(item);
-      requestAnimationFrame(() => item.classList.add('show'));
-      setTimeout(() => item.remove(), 7500);
-
-      if (system && localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled' && 'Notification' in window && Notification.permission === 'granted') {
-        try { new Notification(title, { body: text || 'Telegram Proxy' }); } catch (_) {}
+    const stableOrder = proxies => {
+      const oldOrder = readJson(CONFIG.orderKey, []);
+      const existing = new Set(proxies.map(p => p.id));
+      const ordered = [];
+      for (const id of oldOrder) {
+        const item = proxies.find(p => p.id === id);
+        if (item) ordered.push(item);
       }
-    };
-
-    const requestNotifications = async () => {
-      if (!('Notification' in window)) {
-        notify('Браузерные уведомления недоступны', 'Внутренние уведомления на странице останутся.', false);
-        return;
+      for (const item of proxies) {
+        if (!ordered.find(p => p.id === item.id)) ordered.push(item);
       }
-      const permission = await Notification.requestPermission();
-      localStorage.setItem(CONFIG.NOTIFY_KEY, permission === 'granted' ? 'enabled' : 'disabled');
-      notify(permission === 'granted' ? 'Уведомления включены' : 'Уведомления не включены', permission === 'granted' ? 'Новые и обновлённые прокси будут заметнее.' : 'Табло всё равно будет работать.', false);
-      render();
+      const finalList = ordered.filter(p => existing.has(p.id));
+      writeJson(CONFIG.orderKey, finalList.map(p => p.id));
+      return finalList;
     };
 
-    const webProxyLink = proxy => `https://t.me/proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
-
-    window.connectProxy = id => {
-      const proxy = state.proxies.find(p => p.id === id);
-      if (!proxy) return;
-      markUsed(proxy.id);
-      proxy.used = true;
-      render();
-      window.location.href = proxy.raw || webProxyLink(proxy);
-    };
-
-    window.copyProxy = async id => {
-      const proxy = state.proxies.find(p => p.id === id);
-      if (!proxy) return;
-      const link = proxy.raw || webProxyLink(proxy);
-      try {
-        await navigator.clipboard.writeText(link);
-        notify('Ссылка скопирована', `${proxy.server}:${proxy.port}`, false);
-      } catch (_) {
-        notify('Не удалось скопировать', 'Открой через кнопку подключения.', false);
-      }
-    };
-
-    window.resetUsed = () => {
-      localStorage.removeItem(CONFIG.USED_KEY);
-      state.proxies = state.proxies.map(p => ({ ...p, used: false }));
-      notify('Использованные сброшены', 'Карточки снова яркие только в этом браузере.', false);
-      render();
-    };
-
-    const loadProxies = async (manual = false) => {
-      if (state.loading) return;
-      state.loading = true;
-      if (manual) render();
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 12000);
-        const response = await fetch(`${CONFIG.PROXIES_URL}?v=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
-        clearTimeout(timeout);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        const rawProxies = Array.isArray(data.proxies) ? data.proxies : [];
-        const withEvents = detectUiEvents(rawProxies)
-          .filter(p => p.server && p.port && p.secret && p.online === true && p.checkPassed === true && Number(p.strictPassed) === Number(p.strictRequired || 10))
-          .sort((a, b) => {
-            if (a.used !== b.used) return a.used ? 1 : -1;
-            return (a.pingMs ?? 999999) - (b.pingMs ?? 999999);
-          });
-
-        const changed = withEvents.filter(p => p.uiEvent && ['new', 'updated', 'latency_changed'].includes(p.uiEvent));
-        if ((state.hasSnapshot || manual) && changed.length) {
-          const newCount = changed.filter(p => p.uiEvent === 'new').length;
-          const changedCount = changed.length - newCount;
-          notify('Табло обновилось', `${newCount ? `новых: ${newCount}` : ''}${newCount && changedCount ? ', ' : ''}${changedCount ? `изменений: ${changedCount}` : ''}`.trim());
-        }
-
-        state.data = data;
-        state.proxies = withEvents;
-        state.lastUiRefreshAt = Date.now();
-        state.nextUiRefreshAt = Date.now() + CONFIG.AUTO_REFRESH_MS;
-        saveSnapshot(withEvents);
-      } catch (error) {
-        console.error(error);
-        notify('Не удалось загрузить список', 'Проверь proxies.json или последний запуск Actions.', false);
-      } finally {
-        state.loading = false;
-        render();
-      }
-    };
-
-    const proxyCard = proxy => {
-      const classes = [
-        'proxy-card',
-        proxy.used ? 'used' : '',
-        proxy.uiEvent === 'new' ? 'is-new' : '',
-        ['updated', 'latency_changed'].includes(proxy.uiEvent) ? 'is-updated' : ''
-      ].filter(Boolean).join(' ');
+    const cardTemplate = proxy => {
       const ping = typeof proxy.pingMs === 'number' ? proxy.pingMs : null;
-      const strict = `${proxy.strictPassed || 10}/${proxy.strictRequired || 10}`;
-      const eventLabel = proxy.uiEvent === 'new' ? ' · новый' : ['updated', 'latency_changed'].includes(proxy.uiEvent) ? ' · обновлён' : '';
-
+      const cls = pingClass(ping);
       return `
-        <article class="${classes}" data-id="${escapeHtml(proxy.id)}">
+        <article class="card" data-id="${escapeHtml(proxy.id)}">
           <div class="server">
             <div class="flag">${escapeHtml(proxy.flag || '🌐')}</div>
             <div style="min-width:0">
-              <div class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</div>
-              <div class="sub">порт ${escapeHtml(proxy.port)}${proxy.used ? ' · использован у тебя' : eventLabel}</div>
+              <div class="name"><span class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</span><span class="fire" hidden>🔥</span></div>
+              <div class="port">порт ${escapeHtml(proxy.port)}</div>
             </div>
           </div>
-          <div class="ping ${pingClass(ping)}">
-            <div class="ping-value">${ping === null ? '—' : `${ping} ms`}</div>
+          <div class="ping">
+            <span class="ping-value ${cls}">${ping === null ? '—' : `${ping} ms`}</span>
             <div class="ping-label">пинг</div>
           </div>
           <div class="actions">
-            <button class="btn ${proxy.used ? 'used' : ''}" type="button" onclick='connectProxy(${JSON.stringify(proxy.id)})'>${proxy.used ? 'Ещё раз' : 'Подключить'}</button>
-            <button class="btn secondary" type="button" onclick='copyProxy(${JSON.stringify(proxy.id)})'>⧉</button>
-            <div class="check" title="Сервер попал на сайт только после всех проверок подряд">✓ ${strict}</div>
+            <button class="connect" type="button" data-action="connect">Подключить</button>
+            <button class="secondary copy" type="button" data-action="copy">⧉</button>
           </div>
         </article>`;
     };
 
-    const render = () => {
-      const app = document.getElementById('app');
-      const data = state.data;
-      const count = state.proxies.length;
-      const freshCount = state.proxies.filter(p => !p.used).length;
-      const bestPing = state.proxies.filter(p => typeof p.pingMs === 'number').sort((a, b) => a.pingMs - b.pingMs)[0];
-      const notifyEnabled = localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled';
-      const statusTitle = data ? (count ? 'Готово' : 'Нет рабочих') : 'Загрузка';
-      const statusNote = data
-        ? count
-          ? `Показаны только прокси, прошедшие строгую проверку ${data.check?.strict_required || 10}/10.`
-          : (data.error || 'Actions не нашёл железно рабочие прокси.')
-        : 'Читаю proxies.json';
-
-      app.innerHTML = `
-        <section class="top">
-          <div class="hero glass">
-            <span class="badge">🟢 Только рабочие MTProto</span>
-            <h1>Telegram Proxy</h1>
-            <p class="lead">Минимальное табло для менеджеров: пинг, статус проверки и кнопка подключения. Лишняя техническая информация скрыта.</p>
-          </div>
-          <aside class="status glass">
-            <div>
-              <div class="status-label">Статус</div>
-              <div class="status-value">${escapeHtml(statusTitle)}</div>
-              <div class="status-note">${escapeHtml(statusNote)}</div>
-            </div>
-            <div class="status-note">Лучший пинг: <b>${bestPing ? `${bestPing.pingMs} ms` : '—'}</b><br>Следующая проверка: ${escapeHtml(formatFull(data?.next_update))}</div>
-          </aside>
-        </section>
-
-        <section class="bar">
-          <div class="bar-left">
-            <span class="badge">Рабочих: ${count}</span>
-            <span class="badge">Не использовано: ${freshCount}</span>
-            <span class="mini">Пинг перечитывается каждые ${secondsLeft()} сек.</span>
-          </div>
-          <div class="bar-left">
-            <button class="btn secondary" type="button" onclick="requestNotifications()">${notifyEnabled ? '🔔 Вкл.' : '🔔 Уведомления'}</button>
-            <button class="btn secondary" type="button" onclick="resetUsed()">Сброс</button>
-            <button class="btn" type="button" onclick="loadProxies(true)" ${state.loading ? 'disabled' : ''}>${state.loading ? '<span class="spin">↻</span>' : '↻'} Обновить</button>
-          </div>
-        </section>
-
-        <section class="board">
-          ${state.loading && !state.proxies.length ? '<div class="loader"><div class="spinner"></div>Загружаю список…</div>' : ''}
-          ${!state.loading && !state.proxies.length ? '<div class="empty">Сейчас нет прокси, которые прошли 10 проверок подряд. Лучше показать пусто, чем дать менеджеру мёртвый сервер.</div>' : ''}
-          <div class="cards">${state.proxies.map(proxyCard).join('')}</div>
-        </section>
-      `;
+    const updateCard = (proxy, bestPing) => {
+      const card = board.querySelector(`[data-id="${CSS.escape(proxy.id)}"]`);
+      if (!card) return;
+      const used = getUsed().has(proxy.id);
+      const hot = proxy.fast || proxy.rank <= 2 || (typeof proxy.pingMs === 'number' && typeof bestPing === 'number' && proxy.pingMs <= bestPing + 80);
+      card.classList.toggle('used', used);
+      card.classList.toggle('hot', hot && !used);
+      card.querySelector('.fire').hidden = !(hot && !used);
+      const pingEl = card.querySelector('.ping-value');
+      pingEl.textContent = typeof proxy.pingMs === 'number' ? `${proxy.pingMs} ms` : '—';
+      pingEl.className = `ping-value ${pingClass(proxy.pingMs)}`.trim();
+      card.querySelector('[data-action="connect"]').textContent = used ? 'Ещё раз' : 'Подключить';
     };
 
-    window.loadProxies = loadProxies;
-    window.requestNotifications = requestNotifications;
+    const renderFull = () => {
+      if (!state.proxies.length) {
+        board.innerHTML = `<div class="empty">Сейчас нет прокси, которые прошли реальную проверку Telegram. Лучше пусто, чем мёртвый сервер.</div>`;
+        state.renderedIds = [];
+        return;
+      }
+      board.innerHTML = state.proxies.map(cardTemplate).join('');
+      state.renderedIds = state.proxies.map(p => p.id);
+    };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadProxies(false);
-      clearInterval(state.autoTimer);
-      state.autoTimer = setInterval(() => loadProxies(false), CONFIG.AUTO_REFRESH_MS);
-      clearInterval(state.tickTimer);
-      state.tickTimer = setInterval(render, 1000);
+    const updateUi = () => {
+      const best = state.proxies
+        .filter(p => typeof p.pingMs === 'number')
+        .map(p => p.pingMs)
+        .sort((a, b) => a - b)[0];
+
+      countEl.textContent = String(state.proxies.length || 0);
+      statusText.textContent = state.proxies.length ? 'рабочих' : 'нет рабочих';
+      meta.textContent = state.data
+        ? `Обновлено: ${formatDate(state.data.timestamp)} · следующий прогон: ${formatDate(state.data.next_update)}`
+        : 'Проверяю список…';
+
+      const ids = state.proxies.map(p => p.id);
+      const sameStructure = ids.length === state.renderedIds.length && ids.every((id, i) => id === state.renderedIds[i]);
+      if (!sameStructure) renderFull();
+      state.proxies.forEach(proxy => updateCard(proxy, best));
+    };
+
+    async function load(manual = false) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Обновляю…';
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(`${CONFIG.url}?v=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timer);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const used = getUsed();
+        const raw = Array.isArray(data.proxies) ? data.proxies : [];
+        state.data = data;
+        state.proxies = stableOrder(
+          raw
+            .filter(p => p && p.server && p.port && p.secret && p.online === true && p.checkPassed === true)
+            .map(p => ({ ...p, used: used.has(p.id) }))
+        );
+        updateUi();
+        if (manual) toast('Список обновлён');
+      } catch (error) {
+        console.error(error);
+        meta.textContent = 'Не удалось загрузить proxies.json';
+        if (!state.proxies.length) board.innerHTML = `<div class="empty">Не удалось загрузить список. Проверь последний запуск GitHub Actions.</div>`;
+        toast('Ошибка загрузки');
+      } finally {
+        state.loading = false;
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Обновить';
+      }
+    }
+
+    board.addEventListener('click', async event => {
+      const button = event.target.closest('button');
+      const card = event.target.closest('.card');
+      if (!button || !card) return;
+      const proxy = state.proxies.find(p => p.id === card.dataset.id);
+      if (!proxy) return;
+
+      if (button.dataset.action === 'connect') {
+        markUsed(proxy.id);
+        proxy.used = true;
+        updateUi();
+        window.location.href = linkFor(proxy);
+        setTimeout(() => { window.location.href = webLinkFor(proxy); }, 450);
+      }
+
+      if (button.dataset.action === 'copy') {
+        try {
+          await navigator.clipboard.writeText(webLinkFor(proxy));
+          toast('Ссылка скопирована');
+        } catch (_) {
+          toast('Не получилось скопировать');
+        }
+      }
     });
+
+    refreshBtn.addEventListener('click', () => load(true));
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem(CONFIG.usedKey);
+      state.proxies = state.proxies.map(p => ({ ...p, used: false }));
+      updateUi();
+      toast('Использованные сброшены');
+    });
+
+    load(false);
+    setInterval(() => load(false), CONFIG.refreshMs);
   </script>
 </body>
 </html>

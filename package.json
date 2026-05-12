@@ -1,0 +1,17 @@
+{
+  "name": "telegram-proxy-redirect",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Minimal Telegram MTProto proxy dashboard with real TDLib verification",
+  "scripts": {
+    "fetch": "node fetch-proxies.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "prebuilt-tdlib": "^0.1008059.0",
+    "tdl": "^7.4.1",
+    "tdl-tdlib-addon": "^1.2.2"
+  }
+}
