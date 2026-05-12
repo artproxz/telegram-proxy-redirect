@@ -1,535 +1,603 @@
-const https = require('https');
+'use strict';
+
+/**
+ * Telegram MTProto proxy updater for GitHub Actions.
+ *
+ * What it does:
+ * 1. Reads public MTProto proxy lists/channels.
+ * 2. Parses tg://proxy links and "Server / Port / Secret" blocks.
+ * 3. Deduplicates and checks TCP reachability only for listed public servers.
+ * 4. Writes proxies.json for GitHub Pages.
+ * 5. Optionally notifies you about newly added proxies via Telegram Bot or Discord webhook.
+ *
+ * No port scanning, no brute force, no authentication bypass.
+ */
+
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const net = require('net');
+const crypto = require('crypto');
 
-const OUTPUT_FILE = 'proxies.json';
-const MAX_CANDIDATES = Number(process.env.MAX_CANDIDATES || 180);
-const MAX_REAL_CANDIDATES = Number(process.env.MAX_REAL_CANDIDATES || 32);
-const MAX_PROXIES = Number(process.env.MAX_PROXIES || 10);
-const TCP_TIMEOUT_MS = Number(process.env.TCP_TIMEOUT_MS || 2500);
-const REAL_TIMEOUT_MS = Number(process.env.REAL_TIMEOUT_MS || 9000);
-const TCP_CHECKS = Number(process.env.TCP_CHECKS || 5);
-const REAL_CHECKS = Number(process.env.REAL_CHECKS || 5);
-const CHECK_CONCURRENCY = Number(process.env.CHECK_CONCURRENCY || 24);
-const STRICT_REQUIRED = TCP_CHECKS + REAL_CHECKS;
-
-const SCHEDULE_TZ = 'Europe/Moscow';
-const SCHEDULE_TZ_OFFSET_MINUTES = 180;
-const SCHEDULE_POINTS = [
-  { hour: 8, minute: 30, label: '08:30' },
-  { hour: 12, minute: 30, label: '12:30' },
-  { hour: 16, minute: 30, label: '16:30' },
-  { hour: 20, minute: 30, label: '20:30' },
-  { hour: 22, minute: 0, label: '22:00' }
+const DEFAULT_SOURCES = [
+  'https://t.me/s/ProxyMTProto',
+  'https://t.me/s/MTProtoProxies',
+  'https://t.me/s/ProxyFree_Ru',
+  'https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt',
+  'https://raw.githubusercontent.com/Grim1313/mtproto-for-telegram/master/all_proxies.txt'
 ];
 
-// Источники расставлены по приоритету: сначала агрегаторы с автообновлением,
-// затем крупные Telegram-каналы со свежими MTProto-ссылками.
-const DEFAULT_PROVIDERS = [
-  { name: 'SoliSpirit verified feed', url: 'https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt' },
-  { name: 'Grim1313 verified mirror', url: 'https://raw.githubusercontent.com/Grim1313/mtproto-for-telegram/master/all_proxies.txt' },
-  { name: 'iwh3n/devho3ein working feed', url: 'https://raw.githubusercontent.com/devho3ein/tg-proxy/refs/heads/main/proxys/All_Proxys.txt' },
-  { name: 'kort0881 collector RU feed', url: 'https://raw.githubusercontent.com/kort0881/telegram-proxy-collector/main/proxy_ru.txt' },
-  { name: 'ProxyMTProto channel', url: 'https://t.me/s/ProxyMTProto' },
-  { name: 'MTPro.XYZ channel', url: 'https://t.me/s/mtpro_xyz' },
-  { name: 'ProxyFree_Ru channel', url: 'https://t.me/s/ProxyFree_Ru' },
-  { name: 'TelMTProto channel', url: 'https://t.me/s/TelMTProto' }
-];
+const CONFIG = {
+  outputFile: process.env.OUTPUT_FILE || 'proxies.json',
+  timezone: process.env.TIMEZONE || 'Europe/Paris',
+  maxProxies: toInt(process.env.MAX_PROXIES, 24),
+  perSourceLimit: toInt(process.env.PER_SOURCE_LIMIT, 80),
+  timeoutMs: toInt(process.env.CHECK_TIMEOUT_MS, 4500),
+  checkConcurrency: toInt(process.env.CHECK_CONCURRENCY, 16),
+  keepUnverifiedIfFew: process.env.KEEP_UNVERIFIED_IF_FEW !== 'false',
+  minVerified: toInt(process.env.MIN_VERIFIED, 3),
+  sourceUrls: parseSourceUrls(process.env.SOURCE_URLS),
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || ''
+};
 
-const PROVIDERS = (process.env.PROXY_PROVIDERS || '')
-  .split(',')
-  .map(x => x.trim())
-  .filter(Boolean)
-  .map((url, index) => ({ name: `custom_${index + 1}`, url }))
-  .concat(process.env.PROXY_PROVIDERS ? [] : DEFAULT_PROVIDERS);
+function parseSourceUrls(value) {
+  if (!value || !value.trim()) return DEFAULT_SOURCES;
+  return value
+    .split(/[\n,]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
+}
 
-const FLAG_MAP = [
-  [/\.ru$/i, '🇷🇺'], [/\.de$/i, '🇩🇪'], [/\.nl$/i, '🇳🇱'], [/\.fr$/i, '🇫🇷'],
-  [/\.fi$/i, '🇫🇮'], [/\.uk$/i, '🇬🇧'], [/\.co\.uk$/i, '🇬🇧'], [/\.us$/i, '🇺🇸'],
-  [/\.sg$/i, '🇸🇬'], [/\.ir$/i, '🇮🇷'], [/\.ae$/i, '🇦🇪'], [/\.tr$/i, '🇹🇷'],
-  [/\.pl$/i, '🇵🇱'], [/\.by$/i, '🇧🇾'], [/^185\./, '🇳🇱'], [/^91\.107\./, '🇩🇪'],
-  [/^65\.109\./, '🇫🇮'], [/^51\.15\./, '🇫🇷'], [/^149\.154\./, '🇬🇧']
-];
+function toInt(value, fallback) {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function nextUpdateIso() {
+  const now = new Date();
+  const allowedHours = [9, 13, 17, 21];
+
+  for (let dayOffset = 0; dayOffset <= 2; dayOffset++) {
+    for (const hour of allowedHours) {
+      const candidate = zonedDateCandidate(CONFIG.timezone, dayOffset, hour, 17, 0);
+      if (candidate && candidate.getTime() > now.getTime() + 60_000) {
+        return candidate.toISOString();
+      }
+    }
+  }
+  return new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString();
+}
+
+function zonedDateCandidate(timeZone, dayOffset, hour, minute, second) {
+  // Build an approximate UTC date, then adjust with Intl offset.
+  const base = new Date();
+  const utc = new Date(Date.UTC(
+    base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + dayOffset,
+    hour, minute, second
+  ));
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).formatToParts(utc).reduce((acc, p) => {
+    if (p.type !== 'literal') acc[p.type] = p.value;
+    return acc;
+  }, {});
+
+  const asIfUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  const offsetMs = asIfUtc - utc.getTime();
+  return new Date(Date.UTC(
+    base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + dayOffset,
+    hour, minute, second
+  ) - offsetMs);
+}
+
+function readPrevious(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.warn(`⚠️ Cannot read previous ${filePath}: ${error.message}`);
+    return null;
+  }
+}
+
+function writeJson(filePath, payload) {
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+}
 
 function fetchUrl(url) {
+  const client = url.startsWith('http://') ? http : https;
+
   return new Promise((resolve, reject) => {
-    const req = https.get(url, {
-      timeout: 18000,
+    const req = client.get(url, {
+      timeout: CONFIG.timeoutMs,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-        'Accept': 'text/plain,text/html,application/json,*/*;q=0.8',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.7'
+        'User-Agent': 'Mozilla/5.0 GitHubActionsProxyUpdater/2.0 (+https://github.com/)',
+        'Accept': 'text/html,text/plain,application/json;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ru,en;q=0.8'
       }
     }, res => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
-        fetchUrl(new URL(res.headers.location, url).toString()).then(resolve, reject);
+        const redirected = new URL(res.headers.location, url).toString();
+        fetchUrl(redirected).then(resolve, reject);
         return;
       }
-      if (res.statusCode < 200 || res.statusCode >= 400) {
+
+      if (!res.statusCode || res.statusCode >= 400) {
         res.resume();
-        reject(new Error(`HTTP ${res.statusCode}`));
+        reject(new Error(`HTTP ${res.statusCode || 'unknown'}`));
         return;
       }
+
       let data = '';
       res.setEncoding('utf8');
-      res.on('data', chunk => data += chunk);
+      res.on('data', chunk => {
+        data += chunk;
+        if (data.length > 4_000_000) {
+          req.destroy(new Error('Response is too large'));
+        }
+      });
       res.on('end', () => resolve(data));
     });
-    req.on('timeout', () => req.destroy(new Error('timeout')));
+
+    req.on('timeout', () => req.destroy(new Error('Request timeout')));
     req.on('error', reject);
   });
 }
 
-function decodeHtml(input) {
-  return String(input || '')
+function decodeHtml(text) {
+  return String(text || '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x2F;/g, '/')
-    .replace(/&#x3D;/g, '=')
     .replace(/&nbsp;/g, ' ');
 }
 
-function stripTrailingGarbage(value) {
-  return String(value || '')
+function stripTags(text) {
+  return decodeHtml(String(text || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, ' '));
+}
+
+function normalizeHost(host) {
+  return String(host || '')
     .trim()
-    .replace(/[),.;<>'"\]\s]+$/g, '')
-    .replace(/^[`'"\s]+/g, '')
-    .replace(/[`]+$/g, '');
+    .replace(/^https?:\/\//i, '')
+    .replace(/^\[|\]$/g, '')
+    .replace(/[\s`'"<>]+/g, '')
+    .replace(/\/+$/g, '')
+    .toLowerCase();
 }
 
-function normalizeSecretForLink(secret) {
-  let result = stripTrailingGarbage(secret);
-  try { result = decodeURIComponent(result); } catch (_) {}
-  return result.replace(/\s/g, '');
-}
-
-function normalizeSecretForTdlib(secret) {
-  const raw = normalizeSecretForLink(secret);
-  if (!raw) throw new Error('INVALID_SECRET');
-
-  if (/^[0-9a-fA-F]+$/.test(raw)) {
-    if (raw.length % 2 !== 0) throw new Error('INVALID_SECRET');
-    return Buffer.from(raw, 'hex').toString('hex').toLowerCase();
-  }
-
-  let normalized = raw.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = normalized.length % 4;
-  if (padding !== 0) normalized += '='.repeat(4 - padding);
-  const bytes = Buffer.from(normalized, 'base64');
-  if (!bytes.length) throw new Error('INVALID_SECRET');
-  return bytes.toString('hex').toLowerCase();
+function normalizeSecret(secret) {
+  return String(secret || '')
+    .trim()
+    .replace(/[\s`'"<>]+/g, '')
+    .replace(/&amp;/g, '&');
 }
 
 function isValidHost(host) {
-  if (!host || host.length > 253) return false;
-  if (/unknown|null|undefined|localhost/i.test(host)) return false;
-  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) {
-    return host.split('.').every(part => Number(part) >= 0 && Number(part) <= 255);
-  }
-  return /^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(host);
+  if (!host || host.toLowerCase() === 'unknown') return false;
+  if (host.length > 253) return false;
+  if (/[/:?#@]/.test(host)) return false;
+  const ipv4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+  const domain = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+  return ipv4.test(host) || domain.test(host);
 }
 
-function getFlag(server) {
-  const clean = String(server || '').toLowerCase();
-  for (const [pattern, flag] of FLAG_MAP) if (pattern.test(clean)) return flag;
+function isValidPort(port) {
+  const n = Number(port);
+  return Number.isInteger(n) && n >= 1 && n <= 65535;
+}
+
+function isValidSecret(secret) {
+  if (!secret || secret.length < 16 || secret.length > 256) return false;
+  return /^[A-Za-z0-9_+\-=/]+$/.test(secret);
+}
+
+
+function enrichProxy(proxy, overrides = {}) {
+  const server = normalizeHost(proxy.server);
+  const port = String(proxy.port || '').trim().replace(/\D/g, '');
+  const secret = normalizeSecret(proxy.secret);
+  const params = new URLSearchParams({ server, port, secret });
+  const hash = proxy.hash || crypto.createHash('sha256').update(`${server}:${port}:${secret}`).digest('hex').slice(0, 16);
+  return {
+    ...proxy,
+    ...overrides,
+    server,
+    port,
+    secret,
+    flag: proxy.flag || guessFlag(server),
+    raw: proxy.raw || `tg://proxy?${params.toString()}`,
+    webUrl: proxy.webUrl || `https://t.me/proxy?${params.toString()}`,
+    hash
+  };
+}
+
+function makeProxy(server, port, secret, source, fetchedAt) {
+  server = normalizeHost(server);
+  port = String(port || '').trim().replace(/\D/g, '');
+  secret = normalizeSecret(secret);
+
+  if (!isValidHost(server) || !isValidPort(port) || !isValidSecret(secret)) return null;
+
+  const params = new URLSearchParams({ server, port, secret });
+  const raw = `tg://proxy?${params.toString()}`;
+  const webUrl = `https://t.me/proxy?${params.toString()}`;
+  const hash = crypto.createHash('sha256').update(`${server}:${port}:${secret}`).digest('hex').slice(0, 16);
+
+  return {
+    type: 'MTProto',
+    server,
+    port,
+    secret,
+    flag: guessFlag(server),
+    source,
+    fetchedAt: fetchedAt || nowIso(),
+    raw,
+    webUrl,
+    hash
+  };
+}
+
+function guessFlag(server) {
+  const s = server.toLowerCase();
+  const map = [
+    ['.ru', '🇷🇺'], ['.de', '🇩🇪'], ['.nl', '🇳🇱'], ['.fr', '🇫🇷'], ['.fi', '🇫🇮'],
+    ['.uk', '🇬🇧'], ['.co.uk', '🇬🇧'], ['.us', '🇺🇸'], ['.sg', '🇸🇬'], ['.ir', '🇮🇷'],
+    ['.ae', '🇦🇪'], ['.tr', '🇹🇷'], ['.pl', '🇵🇱'], ['.it', '🇮🇹'], ['.space', '🌐']
+  ];
+  for (const [needle, flag] of map) if (s.endsWith(needle)) return flag;
+  if (s.startsWith('185.')) return '🇳🇱';
+  if (s.startsWith('91.107.')) return '🇩🇪';
+  if (s.startsWith('65.109.')) return '🇫🇮';
+  if (s.startsWith('51.15.')) return '🇫🇷';
+  if (s.startsWith('149.154.')) return '🌐';
   return '🌐';
 }
 
-function buildRaw(proxy) {
-  return `tg://proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
+function sourceName(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 't.me') {
+      return `t.me/${u.pathname.split('/').filter(Boolean).slice(-1)[0] || 'channel'}`;
+    }
+    if (u.hostname.includes('githubusercontent.com')) {
+      const parts = u.pathname.split('/').filter(Boolean);
+      return `${parts[0]}/${parts[1]}`;
+    }
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
 }
 
-function parseProxyLink(link, providerName, sourceTime = null) {
-  const decoded = decodeHtml(String(link || '')).trim();
-  const query = decoded
-    .replace(/^tg:\/\/proxy\?/i, '')
-    .replace(/^https?:\/\/(t\.me|telegram\.me)\/proxy\?/i, '')
-    .replace(/^https?:\/\/(t\.me|telegram\.me)\/socks\?/i, '');
-
-  const params = new URLSearchParams(query);
-  const server = stripTrailingGarbage(params.get('server'));
-  const port = stripTrailingGarbage(params.get('port'));
-  const secret = normalizeSecretForLink(params.get('secret'));
-
-  if (!isValidHost(server)) return null;
-  if (!/^\d{1,5}$/.test(port)) return null;
-  const portNum = Number(port);
-  if (portNum < 1 || portNum > 65535) return null;
-  if (!secret || secret.length < 16) return null;
-
-  const proxy = {
-    id: `${server}:${portNum}:${secret.slice(0, 12)}`,
-    shortId: `${server}:${portNum}`,
-    type: 'MTProto',
-    server,
-    port: String(portNum),
-    secret,
-    secretHex: null,
-    flag: getFlag(server),
-    provider: providerName,
-    sourceTime,
-    raw: ''
-  };
-  proxy.raw = buildRaw(proxy);
-  proxy.fingerprint = `${proxy.server}:${proxy.port}:${proxy.secret}`;
-  return proxy;
-}
-
-function parseAnyText(content, providerName) {
-  const decoded = decodeHtml(content);
+function parseTextForProxies(text, source, sourceUrl) {
+  const decoded = decodeHtml(text);
+  const cleaned = stripTags(decoded);
   const proxies = [];
+  const fetchedAt = nowIso();
 
-  const directLinks = decoded.match(/(?:tg:\/\/proxy|https?:\/\/(?:t\.me|telegram\.me)\/proxy)\?server=[^\s"'<>]+/gi) || [];
-  for (const link of directLinks) {
-    const proxy = parseProxyLink(link, providerName, null);
+  const linkRegex = /(?:tg:\/\/proxy|https?:\/\/t\.me\/proxy)\?[^\s"'<>]+/gi;
+  for (const match of decoded.matchAll(linkRegex)) {
+    const link = decodeHtml(match[0]).replace(/\)$/, '');
+    try {
+      const query = link.includes('?') ? link.slice(link.indexOf('?') + 1) : '';
+      const params = new URLSearchParams(query);
+      const proxy = makeProxy(params.get('server'), params.get('port'), params.get('secret'), source, fetchedAt);
+      if (proxy) proxies.push(proxy);
+    } catch (_) {}
+  }
+
+  const lines = cleaned.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  for (const line of lines) {
+    const proxy = parseLine(line, source, fetchedAt);
     if (proxy) proxies.push(proxy);
   }
 
-  const blocks = decoded.split(/<div[^>]*class="[^"]*tgme_widget_message[^"]*"[^>]*>/i).slice(1);
-  const chunks = blocks.length ? blocks : decoded.split(/\n{2,}|<br\s*\/?>/i);
-
-  for (const chunk of chunks) {
-    const timeMatch = chunk.match(/<time[^>]*datetime="([^"]+)"/i);
-    const sourceTime = timeMatch ? new Date(timeMatch[1]).toISOString() : null;
-    const text = chunk.replace(/<[^>]+>/g, ' ').replace(/`/g, ' ');
-
-    const serverMatch = text.match(/(?:server|хост|сервер)\s*[:=]\s*([a-z0-9._-]+)/i);
-    const portMatch = text.match(/(?:port|порт)\s*[:=]\s*(\d{1,5})/i);
-    const secretMatch = text.match(/(?:secret|ключ)\s*[:=]\s*([A-Za-z0-9_+\-=%/]{16,})/i);
-    if (serverMatch && portMatch && secretMatch) {
-      const proxy = parseProxyLink(`tg://proxy?server=${serverMatch[1]}&port=${portMatch[1]}&secret=${secretMatch[1]}`, providerName, sourceTime);
-      if (proxy) proxies.push(proxy);
-    }
+  // Telegram public channel format usually keeps Server/Port/Secret in one message block.
+  const blocks = decoded.split(/tgme_widget_message[^>]*>/i);
+  for (const block of blocks) {
+    const timeMatch = block.match(/<time[^>]+datetime=["']([^"']+)["']/i);
+    const blockTime = timeMatch ? new Date(timeMatch[1]).toISOString() : fetchedAt;
+    const blockText = stripTags(block);
+    const proxy = parseBlock(blockText, source, blockTime);
+    if (proxy) proxies.push(proxy);
   }
 
-  return proxies;
-}
-
-function tcpConnectPing(server, port, timeoutMs = TCP_TIMEOUT_MS) {
-  return new Promise(resolve => {
-    const startedAt = Date.now();
-    const socket = new net.Socket();
-    let settled = false;
-
-    const finish = (online, error = null) => {
-      if (settled) return;
-      settled = true;
-      socket.destroy();
-      resolve({ online, pingMs: online ? Date.now() - startedAt : null, error: error ? String(error.message || error).slice(0, 120) : null });
-    };
-
-    socket.setTimeout(timeoutMs);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false, 'timeout'));
-    socket.once('error', err => finish(false, err));
-    socket.connect(Number(port), server);
-  });
-}
-
-async function tcpStabilityCheck(proxy, attempts = TCP_CHECKS) {
-  const samples = [];
-  let lastError = null;
-  for (let i = 0; i < attempts; i += 1) {
-    const result = await tcpConnectPing(proxy.server, proxy.port);
-    if (!result.online) {
-      lastError = result.error || 'TCP failed';
-      return { ok: false, samples, error: lastError };
-    }
-    samples.push(result.pingMs);
-    if (i + 1 < attempts) await sleep(90);
-  }
-  return { ok: true, samples, error: null };
-}
-
-async function mapLimit(items, limit, mapper) {
-  const result = new Array(items.length);
-  let index = 0;
-  async function worker() {
-    while (index < items.length) {
-      const current = index++;
-      result[current] = await mapper(items[current], current);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return result;
-}
-
-function readPrevious() {
-  try {
-    if (!fs.existsSync(OUTPUT_FILE)) return null;
-    return JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
-  } catch (_) { return null; }
-}
-
-function nextScheduledUpdate(now = new Date()) {
-  const offsetMs = SCHEDULE_TZ_OFFSET_MINUTES * 60 * 1000;
-  const localNow = new Date(now.getTime() + offsetMs);
-  const y = localNow.getUTCFullYear();
-  const m = localNow.getUTCMonth();
-  const d = localNow.getUTCDate();
-  const candidates = [];
-  for (const dayShift of [0, 1]) {
-    for (const point of SCHEDULE_POINTS) {
-      candidates.push(new Date(Date.UTC(y, m, d + dayShift, point.hour, point.minute, 0) - offsetMs));
-    }
-  }
-  return candidates.find(date => date.getTime() > now.getTime()) || candidates[candidates.length - 1];
-}
-
-function median(values) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
-function loadTdlib() {
-  try {
-    const tdl = require('tdl');
-    const { Client } = require('tdl');
-    const { TDLib } = require('tdl-tdlib-addon');
-    const { getTdjson } = require('prebuilt-tdlib');
-    tdl.configure({ tdjson: getTdjson() });
-    const tdlib = new TDLib();
-    const client = new Client(tdlib, {
-      apiId: 12345,
-      apiHash: '0123456789abcdef0123456789abcdef',
-      useTestDc: false,
-      databaseDirectory: './tdlib-db',
-      filesDirectory: './tdlib-files'
-    });
-    return client;
-  } catch (error) {
-    throw new Error(`TDLib dependencies are not installed or unavailable: ${error.message || error}`);
-  }
-}
-
-function classifyTdlibError(error) {
-  const msg = String(error?.response?.message || error?.message || error || 'Unknown error');
-  if (/timeout/i.test(msg)) return 'TIMEOUT';
-  if (/secret/i.test(msg)) return 'INVALID_SECRET';
-  if (/port/i.test(msg)) return 'INVALID_PORT';
-  if (/server|hostname|getaddrinfo|ENOTFOUND|DNS/i.test(msg)) return 'DNS_OR_SERVER_ERROR';
-  if (/refused|ECONNREFUSED/i.test(msg)) return 'CONNECTION_REFUSED';
-  if (/reset|ECONNRESET/i.test(msg)) return 'CONNECTION_RESET';
-  if (/Response hash mismatch/i.test(msg)) return 'SECRET_OR_PROXY_MISMATCH';
-  return msg.slice(0, 140);
-}
-
-async function pingProxyThroughTelegram(client, proxy) {
-  const secretHex = proxy.secretHex || normalizeSecretForTdlib(proxy.secret);
-  const startedAt = Date.now();
-  let proxyObj = null;
-  try {
-    proxyObj = await client.invoke({
-      _: 'addProxy',
-      server: proxy.server,
-      port: Number(proxy.port),
-      enable: true,
-      type: { _: 'proxyTypeMtproto', secret: secretHex }
-    });
-    const proxyId = proxyObj?.id;
-    if (!proxyId && proxyId !== 0) throw new Error('TDLib did not return proxy id');
-    await Promise.race([
-      client.invoke({ _: 'pingProxy', proxy_id: proxyId }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), REAL_TIMEOUT_MS))
-    ]);
-    return { ok: true, pingMs: Date.now() - startedAt, error: null };
-  } catch (error) {
-    return { ok: false, pingMs: null, error: classifyTdlibError(error) };
-  } finally {
-    try {
-      if (proxyObj?.id || proxyObj?.id === 0) await client.invoke({ _: 'removeProxy', proxy_id: proxyObj.id });
-    } catch (_) {}
-  }
-}
-
-async function realTelegramStrictCheck(client, proxy, attempts = REAL_CHECKS) {
-  const samples = [];
-  let lastError = null;
-  try { proxy.secretHex = normalizeSecretForTdlib(proxy.secret); }
-  catch (error) { return { ok: false, samples, error: 'INVALID_SECRET' }; }
-
-  for (let i = 0; i < attempts; i += 1) {
-    const result = await pingProxyThroughTelegram(client, proxy);
-    if (!result.ok) {
-      lastError = result.error || 'REAL_CHECK_FAILED';
-      return { ok: false, samples, error: lastError };
-    }
-    samples.push(result.pingMs);
-    if (i + 1 < attempts) await sleep(180);
-  }
-  return { ok: true, samples, error: null };
-}
-
-function mergeMetadata(current, previous, nowIso) {
-  const previousMap = new Map((previous?.proxies || []).map(p => [p.fingerprint, p]));
-  return current.map(proxy => {
-    const old = previousMap.get(proxy.fingerprint);
-    return {
-      ...proxy,
-      firstSeenAt: old?.firstSeenAt || nowIso,
-      checkedAt: nowIso,
-      updatedAt: nowIso,
-      fetchedAt: proxy.sourceTime || nowIso
-    };
-  });
-}
-
-async function collectCandidates() {
-  const providerReports = [];
-  const parsed = [];
-
-  for (const provider of PROVIDERS) {
-    const report = { name: provider.name, url: provider.url, ok: false, parsed: 0, error: null };
-    try {
-      const content = await fetchUrl(provider.url);
-      const proxies = parseAnyText(content, provider.name);
-      report.ok = true;
-      report.parsed = proxies.length;
-      parsed.push(...proxies);
-      console.log(`✅ ${provider.name}: parsed ${proxies.length}`);
-    } catch (error) {
-      report.error = String(error.message || error);
-      console.log(`❌ ${provider.name}: ${report.error}`);
-    }
-    providerReports.push(report);
+  // Generic multiline fallback for raw pages.
+  const genericBlocks = cleaned.split(/(?:\r?\n){2,}|-{3,}/g);
+  for (const block of genericBlocks) {
+    const proxy = parseBlock(block, source, fetchedAt);
+    if (proxy) proxies.push(proxy);
   }
 
-  const unique = [];
+  const unique = dedupe(proxies).slice(0, CONFIG.perSourceLimit);
+  console.log(`   ${unique.length} parsed from ${sourceUrl}`);
+  return unique;
+}
+
+function parseLine(line, source, fetchedAt) {
+  const compact = line.trim();
+
+  // server:port:secret or host port secret formats.
+  let m = compact.match(/^([a-z0-9.-]+|\d{1,3}(?:\.\d{1,3}){3})[:\s]+(\d{1,5})[:\s]+([A-Za-z0-9_+\-=/]{16,256})$/i);
+  if (m) return makeProxy(m[1], m[2], m[3], source, fetchedAt);
+
+  // JSON-ish snippets.
+  m = compact.match(/["']server["']\s*:\s*["']([^"']+)["'][\s\S]*?["']port["']\s*:\s*["']?(\d{1,5})["']?[\s\S]*?["']secret["']\s*:\s*["']([^"']+)["']/i);
+  if (m) return makeProxy(m[1], m[2], m[3], source, fetchedAt);
+
+  return null;
+}
+
+function parseBlock(block, source, fetchedAt) {
+  const text = block.replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+
+  const server = firstMatch(text, [
+    /(?:server|host|ip|сервер|хост|адрес)\s*[:：]\s*([a-z0-9.-]+|\d{1,3}(?:\.\d{1,3}){3})/i,
+    /(?:Server|IP)\s+([a-z0-9.-]+|\d{1,3}(?:\.\d{1,3}){3})/i
+  ]);
+  const port = firstMatch(text, [
+    /(?:port|порт)\s*[:：]\s*(\d{1,5})/i,
+    /Port\s+(\d{1,5})/i
+  ]);
+  const secret = firstMatch(text, [
+    /(?:secret|ключ)\s*[:：]\s*([A-Za-z0-9_+\-=/]{16,256})/i,
+    /Secret\s+([A-Za-z0-9_+\-=/]{16,256})/i
+  ]);
+
+  return makeProxy(server, port, secret, source, fetchedAt);
+}
+
+function firstMatch(text, regexes) {
+  for (const regex of regexes) {
+    const m = text.match(regex);
+    if (m && m[1]) return m[1].trim();
+  }
+  return '';
+}
+
+function dedupe(items) {
   const seen = new Set();
-  for (const proxy of parsed) {
-    // Дедуп по полному fingerprint, чтобы один сервер с разными secret не потерять.
-    if (seen.has(proxy.fingerprint)) continue;
-    seen.add(proxy.fingerprint);
-    unique.push(proxy);
+  const out = [];
+  for (const item of items) {
+    const key = `${item.server}:${item.port}:${item.secret}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+async function checkTcp(proxy) {
+  const started = Date.now();
+
+  return new Promise(resolve => {
+    let done = false;
+    const socket = net.createConnection({ host: proxy.server, port: Number(proxy.port), timeout: CONFIG.timeoutMs });
+
+    const finish = (status, error = '') => {
+      if (done) return;
+      done = true;
+      socket.destroy();
+      resolve({
+        ...proxy,
+        status,
+        latencyMs: status === 'online' ? Date.now() - started : null,
+        checkedAt: nowIso(),
+        check: 'tcp-connect',
+        error
+      });
+    };
+
+    socket.once('connect', () => finish('online'));
+    socket.once('timeout', () => finish('offline', 'timeout'));
+    socket.once('error', error => finish('offline', error.code || error.message));
+  });
+}
+
+async function runPool(items, worker, concurrency) {
+  const results = [];
+  let index = 0;
+
+  async function next() {
+    while (index < items.length) {
+      const current = items[index++];
+      results.push(await worker(current));
+    }
   }
 
-  return { providerReports, unique };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, next));
+  return results;
+}
+
+function sortProxies(a, b) {
+  if (a.status !== b.status) return a.status === 'online' ? -1 : 1;
+  const at = new Date(a.fetchedAt).getTime() || 0;
+  const bt = new Date(b.fetchedAt).getTime() || 0;
+  if (at !== bt) return bt - at;
+  return (a.latencyMs ?? 999999) - (b.latencyMs ?? 999999);
+}
+
+function previousHashes(previous) {
+  return new Set((previous?.proxies || []).map(p => p.hash || crypto.createHash('sha256').update(`${p.server}:${p.port}:${p.secret}`).digest('hex').slice(0, 16)));
+}
+
+async function notifyNewProxies(newItems, payload) {
+  if (!newItems.length) return;
+
+  const lines = newItems.slice(0, 8).map((p, i) => `${i + 1}. ${p.server}:${p.port} — ${p.source}`);
+  const text = [
+    `🟢 Новые MTProto прокси: ${newItems.length}`,
+    `Всего на сайте: ${payload.count}`,
+    '',
+    ...lines,
+    newItems.length > 8 ? `…и ещё ${newItems.length - 8}` : '',
+    '',
+    `Обновлено: ${payload.timestamp}`
+  ].filter(Boolean).join('\n');
+
+  const tasks = [];
+  if (CONFIG.telegramBotToken && CONFIG.telegramChatId) {
+    tasks.push(sendTelegram(text));
+  }
+  if (CONFIG.discordWebhookUrl) {
+    tasks.push(sendDiscord(text));
+  }
+
+  if (!tasks.length) {
+    console.log('ℹ️ New proxies found, but notification secrets are not configured.');
+    return;
+  }
+
+  const results = await Promise.allSettled(tasks);
+  for (const result of results) {
+    if (result.status === 'rejected') console.warn(`⚠️ Notify failed: ${result.reason.message}`);
+  }
+}
+
+function requestJson(url, payload) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload);
+    const target = new URL(url);
+    const client = target.protocol === 'http:' ? http : https;
+    const req = client.request({
+      hostname: target.hostname,
+      port: target.port || (target.protocol === 'https:' ? 443 : 80),
+      path: `${target.pathname}${target.search}`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      },
+      timeout: CONFIG.timeoutMs
+    }, res => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) resolve(body);
+        else reject(new Error(`HTTP ${res.statusCode}: ${body.slice(0, 200)}`));
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Notify timeout')));
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+function sendTelegram(text) {
+  const url = `https://api.telegram.org/bot${CONFIG.telegramBotToken}/sendMessage`;
+  return requestJson(url, {
+    chat_id: CONFIG.telegramChatId,
+    text,
+    disable_web_page_preview: true
+  });
+}
+
+function sendDiscord(text) {
+  return requestJson(CONFIG.discordWebhookUrl, { content: text });
 }
 
 async function main() {
-  const started = new Date();
-  const nowIso = started.toISOString();
-  const previous = readPrevious();
-  console.log(`🔎 Start REAL Telegram MTProto check: ${nowIso}`);
-  console.log(`Rule: ${REAL_CHECKS} TDLib pingProxy checks + ${TCP_CHECKS} TCP checks = ${STRICT_REQUIRED}/${STRICT_REQUIRED}`);
+  const previous = readPrevious(CONFIG.outputFile);
+  const prevHashes = previousHashes(previous);
 
-  const { providerReports, unique } = await collectCandidates();
-  const candidates = unique.slice(0, MAX_CANDIDATES);
-  console.log(`📦 Unique candidates: ${unique.length}; quick TCP shortlist from: ${candidates.length}`);
+  console.log(`🔎 Start MTProto proxy update: ${nowIso()}`);
+  console.log(`🧭 Sources: ${CONFIG.sourceUrls.length}`);
 
-  const quickChecked = await mapLimit(candidates, CHECK_CONCURRENCY, async proxy => {
-    const first = await tcpConnectPing(proxy.server, proxy.port);
-    return { ...proxy, tcpFirstOk: first.online, tcpFirstPingMs: first.pingMs, precheckError: first.error };
-  });
+  const parsed = [];
+  const sourceStats = [];
 
-  const shortlist = quickChecked
-    .filter(p => p.tcpFirstOk)
-    .sort((a, b) => (a.tcpFirstPingMs ?? 999999) - (b.tcpFirstPingMs ?? 999999))
-    .slice(0, MAX_REAL_CANDIDATES);
-
-  console.log(`⚡ TCP shortlist: ${shortlist.length}/${quickChecked.length}`);
-
-  const client = loadTdlib();
-  await client.connect();
-  console.log('✅ TDLib connected; starting real Telegram pingProxy checks');
-
-  const checked = [];
-  try {
-    for (const proxy of shortlist) {
-      const tcp = await tcpStabilityCheck(proxy, TCP_CHECKS);
-      if (!tcp.ok) {
-        checked.push({ ...proxy, online: false, checkPassed: false, strictPassed: tcp.samples.length, error: tcp.error, tcpSamplesMs: tcp.samples, realSamplesMs: [] });
-        console.log(`⛔ ${proxy.shortId} TCP ${tcp.samples.length}/${TCP_CHECKS}: ${tcp.error}`);
-        continue;
-      }
-
-      const real = await realTelegramStrictCheck(client, proxy, REAL_CHECKS);
-      const strictPassed = tcp.samples.length + real.samples.length;
-      const allSamples = [...tcp.samples, ...real.samples];
-      const ok = real.ok && strictPassed === STRICT_REQUIRED;
-      checked.push({
-        ...proxy,
-        online: ok,
-        checkPassed: ok,
-        strictPassed,
-        strictRequired: STRICT_REQUIRED,
-        realChecksPassed: real.samples.length,
-        realChecksRequired: REAL_CHECKS,
-        tcpChecksPassed: tcp.samples.length,
-        tcpChecksRequired: TCP_CHECKS,
-        pingMs: ok ? median(real.samples) : null,
-        pingAvgMs: ok ? Math.round(real.samples.reduce((s, v) => s + v, 0) / real.samples.length) : null,
-        pingBestMs: ok ? Math.min(...real.samples) : null,
-        pingWorstMs: ok ? Math.max(...real.samples) : null,
-        tcpMedianMs: median(tcp.samples),
-        realSamplesMs: real.samples,
-        tcpSamplesMs: tcp.samples,
-        error: ok ? null : real.error
-      });
-      console.log(`${ok ? '✅' : '⛔'} ${proxy.shortId} real ${real.samples.length}/${REAL_CHECKS}, tcp ${tcp.samples.length}/${TCP_CHECKS}${ok ? `, ping=${median(real.samples)}ms` : `, ${real.error}`}`);
+  for (const url of CONFIG.sourceUrls) {
+    const name = sourceName(url);
+    try {
+      console.log(`🌐 Fetch ${name}`);
+      const body = await fetchUrl(url);
+      const items = parseTextForProxies(body, name, url);
+      parsed.push(...items);
+      sourceStats.push({ source: name, ok: true, parsed: items.length });
+    } catch (error) {
+      console.warn(`⚠️ ${name}: ${error.message}`);
+      sourceStats.push({ source: name, ok: false, parsed: 0, error: error.message });
     }
-  } finally {
-    try { await client.close(); } catch (_) {}
   }
 
-  const working = mergeMetadata(
-    checked
-      .filter(p => p.online && p.checkPassed && p.strictPassed === STRICT_REQUIRED)
-      .sort((a, b) => (a.pingMs ?? 999999) - (b.pingMs ?? 999999))
-      .slice(0, MAX_PROXIES)
-      .map((p, index) => ({ ...p, rank: index + 1, fast: index < 2 || (p.pingMs ?? 999999) <= 350 })),
-    previous,
-    nowIso
-  );
+  const unique = dedupe(parsed).sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
+  console.log(`📦 Unique parsed: ${unique.length}`);
 
-  const result = {
-    success: working.length > 0,
-    count: working.length,
-    timestamp: nowIso,
-    next_update: nextScheduledUpdate(started).toISOString(),
-    schedule: { timezone: SCHEDULE_TZ, points: SCHEDULE_POINTS.map(p => p.label) },
-    check: {
-      type: 'tdlib_pingProxy_plus_tcp_stability',
-      note: 'На сайт попадают только прокси, которые прошли реальные TDLib pingProxy-проверки и TCP-стабильность. Открытый порт больше не считается рабочим прокси.',
-      real_checks_required: REAL_CHECKS,
-      tcp_checks_required: TCP_CHECKS,
-      strict_required: STRICT_REQUIRED,
-      candidates: candidates.length,
-      tcp_shortlist: shortlist.length,
-      passed: working.length,
-      failed: checked.filter(p => !p.checkPassed).length,
-      timeout_ms: { tcp: TCP_TIMEOUT_MS, tdlib: REAL_TIMEOUT_MS }
-    },
-    providers: providerReports,
-    proxies: working.map(({ secretHex, ...safe }) => safe),
-    error: working.length ? null : `Не найдено прокси, прошедших ${REAL_CHECKS} реальных TDLib-проверок и ${TCP_CHECKS} TCP-проверок.`
+  const toCheck = unique.slice(0, Math.max(CONFIG.maxProxies * 4, CONFIG.maxProxies));
+  const checked = await runPool(toCheck, checkTcp, CONFIG.checkConcurrency);
+  const online = checked.filter(p => p.status === 'online').sort(sortProxies);
+  console.log(`✅ Online by TCP: ${online.length}`);
+
+  let finalProxies = online.slice(0, CONFIG.maxProxies);
+  let success = finalProxies.length > 0;
+  let note = 'Only TCP reachability is checked; Telegram availability may vary by country/operator.';
+
+  if (finalProxies.length < CONFIG.minVerified && CONFIG.keepUnverifiedIfFew) {
+    const existingKeys = new Set(finalProxies.map(p => p.hash));
+    const unverified = unique
+      .filter(p => !existingKeys.has(p.hash))
+      .slice(0, CONFIG.maxProxies - finalProxies.length)
+      .map(p => ({ ...p, status: 'unverified', latencyMs: null, checkedAt: nowIso(), check: 'not-checked' }));
+    finalProxies = [...finalProxies, ...unverified].slice(0, CONFIG.maxProxies);
+    success = finalProxies.length > 0;
+    note = unverified.length
+      ? 'Few TCP-verified proxies were found, so fresh unverified public entries are shown below verified entries.'
+      : 'Only a small number of TCP-verified proxies was found.';
+  }
+
+  if (!finalProxies.length && previous?.proxies?.length) {
+    console.warn('⚠️ No proxies found. Keeping previous cache.');
+    finalProxies = previous.proxies.map(p => enrichProxy(p, { status: p.status || 'cached', checkedAt: nowIso(), check: p.check || 'previous-cache' }));
+    success = false;
+    note = 'Sources did not return usable proxies; previous cache is kept.';
+  }
+
+  if (!finalProxies.length) {
+    success = false;
+    note = 'No usable proxies were found. Check source availability or add your own SOURCE_URLS.';
+  }
+
+  finalProxies = finalProxies.sort(sortProxies).slice(0, CONFIG.maxProxies);
+  finalProxies = finalProxies.map(p => enrichProxy(p));
+  const newItems = finalProxies.filter(p => p.hash && !prevHashes.has(p.hash));
+
+  const payload = {
+    success,
+    count: finalProxies.length,
+    newCount: newItems.length,
+    timestamp: nowIso(),
+    next_update: nextUpdateIso(),
+    timezone: CONFIG.timezone,
+    schedule: '09:17, 13:17, 17:17, 21:17 local time',
+    sourceStats,
+    note,
+    proxies: finalProxies
   };
 
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
-  console.log(`💾 Saved real working proxies: ${working.length}; next=${result.next_update}`);
+  writeJson(CONFIG.outputFile, payload);
+  console.log(`💾 Saved ${finalProxies.length} proxies to ${CONFIG.outputFile}`);
+
+  await notifyNewProxies(newItems, payload);
+  console.log('🏁 Done');
 }
 
 main().catch(error => {
-  console.error('💥 Fatal:', error);
-  const now = new Date();
-  const result = {
-    success: false,
-    count: 0,
-    timestamp: now.toISOString(),
-    next_update: nextScheduledUpdate(now).toISOString(),
-    schedule: { timezone: SCHEDULE_TZ, points: SCHEDULE_POINTS.map(p => p.label) },
-    check: { type: 'tdlib_pingProxy_plus_tcp_stability', real_checks_required: REAL_CHECKS, tcp_checks_required: TCP_CHECKS, strict_required: STRICT_REQUIRED },
-    providers: [],
-    proxies: [],
-    error: String(error.message || error)
-  };
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
+  console.error(`❌ Fatal error: ${error.stack || error.message}`);
   process.exitCode = 1;
 });

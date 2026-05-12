@@ -1,28 +1,61 @@
 {
-  "success": false,
-  "count": 0,
-  "timestamp": "2026-05-12T00:00:00.000Z",
-  "next_update": "2026-05-12T05:30:00.000Z",
-  "schedule": {
-    "timezone": "Europe/Moscow",
-    "points": ["08:30", "12:30", "16:30", "20:30", "22:00"]
-  },
-  "check": {
-    "type": "tdlib_pingProxy_plus_tcp_stability",
-    "note": "Список будет заполнен после первого запуска GitHub Actions. На сайт попадут только прокси, прошедшие реальные TDLib pingProxy-проверки и TCP-стабильность.",
-    "real_checks_required": 5,
-    "tcp_checks_required": 5,
-    "strict_required": 10,
-    "candidates": 0,
-    "tcp_shortlist": 0,
-    "passed": 0,
-    "failed": 0,
-    "timeout_ms": {
-      "tcp": 2500,
-      "tdlib": 9000
+  "success": true,
+  "count": 3,
+  "newCount": 0,
+  "timestamp": "2026-05-12T05:50:00.000Z",
+  "next_update": "2026-05-12T07:17:00.000Z",
+  "timezone": "Europe/Paris",
+  "schedule": "09:17, 13:17, 17:17, 21:17 local time",
+  "sourceStats": [],
+  "note": "Стартовый кэш. После первого запуска GitHub Actions список будет заново собран и проверен по TCP-доступности.",
+  "proxies": [
+    {
+      "type": "MTProto",
+      "server": "peyk.acharbashi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "source": "starter-cache",
+      "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "raw": "tg://proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "webUrl": "https://t.me/proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "hash": "1646840e0ea5f6ff",
+      "status": "unverified",
+      "latencyMs": null,
+      "checkedAt": "2026-05-12T05:50:00.000Z",
+      "check": "starter-cache"
+    },
+    {
+      "type": "MTProto",
+      "server": "dedicated.love-internet.xyz",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "source": "starter-cache",
+      "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "webUrl": "https://t.me/proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "hash": "ef87ff1a6ee79111",
+      "status": "unverified",
+      "latencyMs": null,
+      "checkedAt": "2026-05-12T05:50:00.000Z",
+      "check": "starter-cache"
+    },
+    {
+      "type": "MTProto",
+      "server": "alo.acharbashi.info",
+      "port": "4515",
+      "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "flag": "🌐",
+      "source": "starter-cache",
+      "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "webUrl": "https://t.me/proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
+      "hash": "a0bd252d2b4c6a73",
+      "status": "unverified",
+      "latencyMs": null,
+      "checkedAt": "2026-05-12T05:50:00.000Z",
+      "check": "starter-cache"
     }
-  },
-  "providers": [],
-  "proxies": [],
-  "error": "Список будет заполнен после первого запуска GitHub Actions."
+  ]
 }

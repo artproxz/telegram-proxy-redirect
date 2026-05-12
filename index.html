@@ -1,564 +1,624 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <title>Telegram Proxy</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>MTProto Proxy Hub</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     :root {
-      --bg: #070a12;
-      --panel: #101724;
-      --card: #141d2b;
-      --card-soft: #192437;
+      --bg: #070b14;
+      --panel: rgba(15, 23, 42, .72);
+      --panel-strong: rgba(15, 23, 42, .92);
+      --text: #e5edf9;
+      --muted: #91a4c4;
       --line: rgba(148, 163, 184, .18);
-      --text: #f8fafc;
-      --muted: #91a0b7;
-      --green: #39e58c;
-      --green2: #10b981;
-      --orange: #ffb020;
-      --red: #fb7185;
-      --shadow: 0 20px 70px rgba(0, 0, 0, .36);
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --brand: #38bdf8;
+      --brand-2: #8b5cf6;
+      --shadow: 0 24px 80px rgba(0,0,0,.38);
+      --radius: 24px;
     }
 
     * { box-sizing: border-box; }
-    html, body { min-height: 100%; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at 12% 0%, rgba(16,185,129,.18), transparent 34%),
-        radial-gradient(circle at 88% 8%, rgba(56,189,248,.12), transparent 32%),
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, .24), transparent 34rem),
+        radial-gradient(circle at 85% 0%, rgba(139, 92, 246, .22), transparent 30rem),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .13), transparent 34rem),
         var(--bg);
       overflow-x: hidden;
     }
 
-    .page {
-      width: min(860px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 32px 0 44px;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black 0, transparent 72%);
     }
 
-    .top {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 18px;
+    .wrap {
+      position: relative;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 42px 0 54px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-main, .side-panel, .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .hero-main {
+      padding: 32px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -90px;
+      top: -120px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(56,189,248,.34), rgba(139,92,246,.28));
+      filter: blur(3px);
+      animation: float 7s ease-in-out infinite;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,.28);
+      background: rgba(56,189,248,.11);
+      color: #bae6fd;
+      font-size: 13px;
+      font-weight: 700;
       margin-bottom: 18px;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(2.3rem, 7vw, 4.8rem);
-      line-height: .9;
-      letter-spacing: -.075em;
-    }
-
-    .subtitle {
+      position: relative;
+      z-index: 1;
       margin: 0;
+      max-width: 760px;
+      font-size: clamp(34px, 6vw, 66px);
+      line-height: .94;
+      letter-spacing: -.055em;
+    }
+
+    .lead {
+      position: relative;
+      z-index: 1;
+      margin: 20px 0 0;
+      max-width: 760px;
       color: var(--muted);
-      font-weight: 700;
-      line-height: 1.45;
+      font-size: 17px;
+      line-height: 1.7;
     }
 
-    .status {
-      min-width: 188px;
-      padding: 14px 15px;
-      border-radius: 20px;
-      background: rgba(16, 23, 36, .84);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      text-align: right;
+    .actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
     }
 
-    .status strong {
-      display: block;
-      font-size: 1.65rem;
-      line-height: 1;
-      letter-spacing: -.04em;
-      color: var(--green);
-    }
-
-    .status span {
-      display: block;
-      margin-top: 7px;
-      color: var(--muted);
-      font-size: .82rem;
+    button, .btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      border-radius: 16px;
+      padding: 12px 16px;
+      color: var(--text);
       font-weight: 800;
+      font-size: 14px;
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 12px 30px rgba(56, 189, 248, .22);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,.055);
+      border: 1px solid var(--line);
+    }
+
+    button:hover, .btn:hover { transform: translateY(-2px); }
+    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255,255,255,.045);
+    }
+
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+
+    .stat strong {
+      font-size: 28px;
+      letter-spacing: -.035em;
     }
 
     .toolbar {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-      min-height: 46px;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0 18px;
     }
 
-    .meta {
-      color: var(--muted);
-      font-size: .88rem;
-      font-weight: 800;
+    .toolbar h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -.035em;
     }
 
-    .buttons { display: flex; gap: 8px; }
+    .muted { color: var(--muted); }
 
-    button, .connect {
-      border: 0;
-      appearance: none;
-      border-radius: 14px;
-      padding: 11px 14px;
-      color: #fff;
-      background: linear-gradient(135deg, var(--green), var(--green2));
-      font-weight: 900;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
-    }
-
-    button:hover, .connect:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    button:active, .connect:active { transform: translateY(0); }
-    button.secondary {
-      background: rgba(148, 163, 184, .12);
-      border: 1px solid rgba(148, 163, 184, .16);
-      color: #e2e8f0;
-    }
-    button:disabled { opacity: .55; cursor: default; transform: none; }
-
-    .board {
+    .grid {
       display: grid;
-      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
     }
 
     .card {
       position: relative;
-      min-height: 86px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 150px 148px;
-      align-items: center;
-      gap: 12px;
-      padding: 15px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, var(--card), #111827);
-      border: 1px solid var(--line);
-      box-shadow: 0 14px 40px rgba(0,0,0,.20);
+      padding: 18px;
+      min-height: 245px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       overflow: hidden;
+      animation: rise .42s ease both;
     }
 
-    .card.hot {
-      border-color: rgba(255, 176, 32, .55);
-      box-shadow: 0 0 0 1px rgba(255,176,32,.08), 0 18px 54px rgba(255,176,32,.10);
-    }
-
-    .card.hot::before {
+    .card::before {
       content: "";
       position: absolute;
       inset: 0;
-      border-radius: inherit;
-      padding: 1px;
-      background: linear-gradient(120deg, transparent 0%, rgba(255,176,32,.95) 38%, rgba(57,229,140,.75) 52%, transparent 70%);
-      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      animation: edge 2.8s linear infinite;
-      pointer-events: none;
+      background: linear-gradient(135deg, rgba(56,189,248,.1), transparent 38%, rgba(139,92,246,.1));
+      opacity: 0;
+      transition: opacity .2s ease;
     }
 
-    @keyframes edge { to { filter: hue-rotate(30deg); transform: rotate(360deg); } }
+    .card:hover::before { opacity: 1; }
+    .card > * { position: relative; z-index: 1; }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
 
     .server {
       min-width: 0;
+    }
+
+    .server h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.35;
+      word-break: break-all;
+    }
+
+    .badge-row {
       display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.055);
+      color: #cbd5e1;
+    }
+
+    .status-online { color: var(--good); border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.09); }
+    .status-unverified { color: var(--warn); border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.09); }
+    .status-offline, .status-cached { color: var(--bad); border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.09); }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 16px currentColor;
     }
 
     .flag {
-      width: 42px;
-      height: 42px;
-      flex: 0 0 42px;
+      flex: 0 0 auto;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
       display: grid;
       place-items: center;
-      border-radius: 14px;
-      background: rgba(255,255,255,.05);
-      font-size: 1.55rem;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--line);
+      font-size: 22px;
     }
 
-    .name {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      font-size: 1.03rem;
-      font-weight: 900;
-    }
-
-    .host {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .fire {
-      flex: 0 0 auto;
-      font-size: 1rem;
-      filter: drop-shadow(0 0 8px rgba(255,176,32,.55));
-    }
-
-    .port {
-      margin-top: 5px;
-      color: var(--muted);
-      font-weight: 800;
-      font-size: .82rem;
-    }
-
-    .ping {
-      justify-self: end;
-      text-align: right;
-      min-width: 126px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .ping-value {
-      display: inline-block;
-      min-width: 96px;
-      font-size: 1.85rem;
-      line-height: 1;
-      font-weight: 900;
-      letter-spacing: -.045em;
-      color: #bbf7d0;
-    }
-
-    .ping-value.mid { color: #fde68a; }
-    .ping-value.bad { color: #fecdd3; }
-
-    .ping-label {
-      height: 17px;
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: .75rem;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-
-    .actions {
-      justify-self: end;
+    .kv {
       display: grid;
-      grid-template-columns: 1fr 42px;
-      gap: 7px;
-      width: 148px;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
-    .copy {
-      width: 42px;
-      padding-inline: 0;
+    .kv div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid rgba(148,163,184,.1);
     }
 
-    .card.used {
-      opacity: .45;
-      filter: grayscale(.7);
+    .kv b {
+      color: #dbeafe;
+      font-weight: 700;
+      text-align: right;
+      word-break: break-all;
     }
-    .card.used .connect { background: rgba(71,85,105,.9); }
 
-    .empty {
-      padding: 44px 18px;
-      border-radius: 24px;
-      background: rgba(16,23,36,.78);
-      border: 1px dashed rgba(148,163,184,.24);
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .empty, .loader {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 28px;
       color: var(--muted);
       text-align: center;
-      font-weight: 800;
-      line-height: 1.5;
+    }
+
+    .loader {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 4px solid rgba(255,255,255,.12);
+      border-top-color: var(--brand);
+      animation: spin .85s linear infinite;
+      margin-bottom: 12px;
     }
 
     .toast {
       position: fixed;
-      right: 16px;
-      bottom: 16px;
-      max-width: calc(100% - 32px);
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(16,23,36,.96);
-      border: 1px solid rgba(57,229,140,.22);
-      color: #d1fae5;
-      font-weight: 900;
+      right: 18px;
+      bottom: 18px;
+      width: min(410px, calc(100vw - 36px));
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(56,189,248,.28);
+      background: rgba(15,23,42,.94);
+      backdrop-filter: blur(16px);
       box-shadow: var(--shadow);
+      transform: translateY(18px);
       opacity: 0;
-      transform: translateY(8px);
-      pointer-events: none;
-      transition: .18s ease;
-      z-index: 10;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-
-    @media (max-width: 720px) {
-      .top { align-items: stretch; flex-direction: column; }
-      .status { text-align: left; }
-      .toolbar { align-items: stretch; flex-direction: column; }
-      .buttons { width: 100%; }
-      .buttons button { flex: 1; }
-      .card { grid-template-columns: 1fr; align-items: stretch; }
-      .ping, .actions { justify-self: stretch; text-align: left; width: auto; }
-      .actions { grid-template-columns: 1fr 48px; }
-      .copy { width: 48px; }
+      transition: .25s ease;
+      z-index: 20;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation: none !important; transition: none !important; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(-14px, 18px, 0); } }
+
+    @media (max-width: 920px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 22px, 1180px); padding-top: 22px; }
+      .hero-main, .side-panel, .card { border-radius: 20px; }
+      .hero-main { padding: 22px; }
+      .grid { grid-template-columns: 1fr; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .actions, .card-actions { grid-template-columns: 1fr; }
+      .btn, button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="top">
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="eyebrow">⚡ Auto-updated MTProto list</div>
+        <h1>Рабочие прокси для Telegram на GitHub Pages</h1>
+        <p class="lead">
+          Список обновляется через GitHub Actions, карточки берутся из <b>proxies.json</b>. Проверка выполняется по TCP‑доступности, а уведомления о новых серверах можно получать через Telegram Bot или Discord webhook.
+        </p>
+        <div class="actions">
+          <button class="btn-primary" id="refreshBtn">↻ Обновить список</button>
+          <button class="btn-ghost" id="notifyBtn">🔔 Включить уведомления в браузере</button>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="stat">
+          <small>Серверов на сайте</small>
+          <strong id="count">—</strong>
+        </div>
+        <div class="stat">
+          <small>Последнее обновление</small>
+          <strong id="updated">—</strong>
+        </div>
+        <div class="stat">
+          <small>Следующая проверка</small>
+          <strong id="next">—</strong>
+        </div>
+      </aside>
+    </section>
+
+    <div class="toolbar">
       <div>
-        <h1>Telegram Proxy</h1>
-        <p class="subtitle">Только реально проверенные MTProto. Без лишнего шума.</p>
+        <h2>Карточки прокси</h2>
+        <div class="muted" id="note">Загрузка данных…</div>
       </div>
-      <div class="status">
-        <strong id="count">—</strong>
-        <span id="statusText">загружаю</span>
+    </div>
+
+    <section id="content" class="loader">
+      <div>
+        <div class="spinner"></div>
+        Загружаю proxies.json…
       </div>
     </section>
-
-    <section class="toolbar">
-      <div class="meta" id="meta">Проверяю список…</div>
-      <div class="buttons">
-        <button class="secondary" id="resetBtn" type="button">Сбросить</button>
-        <button id="refreshBtn" type="button">Обновить</button>
-      </div>
-    </section>
-
-    <section class="board" id="board"></section>
   </main>
-  <div class="toast" id="toast"></div>
 
   <script>
     const CONFIG = {
-      url: './proxies.json',
-      refreshMs: 10_000,
-      usedKey: 'telegram_proxy_used_minimal_v2',
-      orderKey: 'telegram_proxy_order_minimal_v2'
+      proxiesUrl: new URL('./proxies.json', location.href).toString(),
+      seenKey: 'mtproto_seen_hashes_v2'
     };
 
     const state = {
       data: null,
-      proxies: [],
-      loading: false,
-      renderedIds: []
+      isLoading: false
     };
 
     const $ = selector => document.querySelector(selector);
-    const board = $('#board');
-    const countEl = $('#count');
-    const statusText = $('#statusText');
-    const meta = $('#meta');
-    const refreshBtn = $('#refreshBtn');
-    const resetBtn = $('#resetBtn');
 
-    const escapeHtml = value => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    function plural(n, one, few, many) {
+      const mod10 = n % 10;
+      const mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return one;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+      return many;
+    }
 
-    const readJson = (key, fallback) => {
-      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
-      catch { return fallback; }
-    };
-    const writeJson = (key, value) => {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
-    };
-
-    const getUsed = () => new Set(readJson(CONFIG.usedKey, []));
-    const markUsed = id => {
-      const used = getUsed();
-      used.add(id);
-      writeJson(CONFIG.usedKey, [...used]);
-    };
-
-    const formatDate = value => {
+    function fmtDate(value) {
+      if (!value) return '—';
       const date = new Date(value);
-      if (!value || Number.isNaN(date.getTime())) return '—';
-      return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    };
+      if (Number.isNaN(date.getTime())) return '—';
+      return date.toLocaleString('ru-RU', {
+        day: '2-digit', month: '2-digit', year: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
 
-    const linkFor = proxy => proxy.raw || `tg://proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
-    const webLinkFor = proxy => `https://t.me/proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
+    function statusLabel(status) {
+      if (status === 'online') return 'online';
+      if (status === 'unverified') return 'свежий, не проверен';
+      if (status === 'cached') return 'кэш';
+      return status || 'unknown';
+    }
 
-    const pingClass = ping => {
-      if (typeof ping !== 'number') return 'bad';
-      if (ping <= 350) return '';
-      if (ping <= 750) return 'mid';
-      return 'bad';
-    };
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[char]));
+    }
 
-    const toast = text => {
-      const el = $('#toast');
-      el.textContent = text;
-      el.classList.add('show');
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => el.classList.remove('show'), 2200);
-    };
+    function getSeen() {
+      try { return new Set(JSON.parse(localStorage.getItem(CONFIG.seenKey) || '[]')); }
+      catch { return new Set(); }
+    }
 
-    const stableOrder = proxies => {
-      const oldOrder = readJson(CONFIG.orderKey, []);
-      const existing = new Set(proxies.map(p => p.id));
-      const ordered = [];
-      for (const id of oldOrder) {
-        const item = proxies.find(p => p.id === id);
-        if (item) ordered.push(item);
-      }
-      for (const item of proxies) {
-        if (!ordered.find(p => p.id === item.id)) ordered.push(item);
-      }
-      const finalList = ordered.filter(p => existing.has(p.id));
-      writeJson(CONFIG.orderKey, finalList.map(p => p.id));
-      return finalList;
-    };
+    function saveSeen(seen) {
+      try { localStorage.setItem(CONFIG.seenKey, JSON.stringify([...seen])); }
+      catch {}
+    }
 
-    const cardTemplate = proxy => {
-      const ping = typeof proxy.pingMs === 'number' ? proxy.pingMs : null;
-      const cls = pingClass(ping);
-      return `
-        <article class="card" data-id="${escapeHtml(proxy.id)}">
-          <div class="server">
-            <div class="flag">${escapeHtml(proxy.flag || '🌐')}</div>
-            <div style="min-width:0">
-              <div class="name"><span class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</span><span class="fire" hidden>🔥</span></div>
-              <div class="port">порт ${escapeHtml(proxy.port)}</div>
-            </div>
-          </div>
-          <div class="ping">
-            <span class="ping-value ${cls}">${ping === null ? '—' : `${ping} ms`}</span>
-            <div class="ping-label">пинг</div>
-          </div>
-          <div class="actions">
-            <button class="connect" type="button" data-action="connect">Подключить</button>
-            <button class="secondary copy" type="button" data-action="copy">⧉</button>
-          </div>
-        </article>`;
-    };
+    function toast(message) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = message;
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => el.remove(), 6500);
+    }
 
-    const updateCard = (proxy, bestPing) => {
-      const card = board.querySelector(`[data-id="${CSS.escape(proxy.id)}"]`);
-      if (!card) return;
-      const used = getUsed().has(proxy.id);
-      const hot = proxy.fast || proxy.rank <= 2 || (typeof proxy.pingMs === 'number' && typeof bestPing === 'number' && proxy.pingMs <= bestPing + 80);
-      card.classList.toggle('used', used);
-      card.classList.toggle('hot', hot && !used);
-      card.querySelector('.fire').hidden = !(hot && !used);
-      const pingEl = card.querySelector('.ping-value');
-      pingEl.textContent = typeof proxy.pingMs === 'number' ? `${proxy.pingMs} ms` : '—';
-      pingEl.className = `ping-value ${pingClass(proxy.pingMs)}`.trim();
-      card.querySelector('[data-action="connect"]').textContent = used ? 'Ещё раз' : 'Подключить';
-    };
+    function browserNotify(title, body) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      try { new Notification(title, { body, icon: '' }); } catch {}
+    }
 
-    const renderFull = () => {
-      if (!state.proxies.length) {
-        board.innerHTML = `<div class="empty">Сейчас нет прокси, которые прошли реальную проверку Telegram. Лучше пусто, чем мёртвый сервер.</div>`;
-        state.renderedIds = [];
-        return;
-      }
-      board.innerHTML = state.proxies.map(cardTemplate).join('');
-      state.renderedIds = state.proxies.map(p => p.id);
-    };
+    function detectNew(proxies) {
+      const seen = getSeen();
+      const fresh = proxies.filter(p => p.hash && !seen.has(p.hash));
+      proxies.forEach(p => p.hash && seen.add(p.hash));
+      saveSeen(seen);
 
-    const updateUi = () => {
-      const best = state.proxies
-        .filter(p => typeof p.pingMs === 'number')
-        .map(p => p.pingMs)
-        .sort((a, b) => a - b)[0];
-
-      countEl.textContent = String(state.proxies.length || 0);
-      statusText.textContent = state.proxies.length ? 'рабочих' : 'нет рабочих';
-      meta.textContent = state.data
-        ? `Обновлено: ${formatDate(state.data.timestamp)} · следующий прогон: ${formatDate(state.data.next_update)}`
-        : 'Проверяю список…';
-
-      const ids = state.proxies.map(p => p.id);
-      const sameStructure = ids.length === state.renderedIds.length && ids.every((id, i) => id === state.renderedIds[i]);
-      if (!sameStructure) renderFull();
-      state.proxies.forEach(proxy => updateCard(proxy, best));
-    };
-
-    async function load(manual = false) {
-      if (state.loading) return;
-      state.loading = true;
-      refreshBtn.disabled = true;
-      refreshBtn.textContent = 'Обновляю…';
-
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 10000);
-        const response = await fetch(`${CONFIG.url}?v=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
-        clearTimeout(timer);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        const used = getUsed();
-        const raw = Array.isArray(data.proxies) ? data.proxies : [];
-        state.data = data;
-        state.proxies = stableOrder(
-          raw
-            .filter(p => p && p.server && p.port && p.secret && p.online === true && p.checkPassed === true)
-            .map(p => ({ ...p, used: used.has(p.id) }))
-        );
-        updateUi();
-        if (manual) toast('Список обновлён');
-      } catch (error) {
-        console.error(error);
-        meta.textContent = 'Не удалось загрузить proxies.json';
-        if (!state.proxies.length) board.innerHTML = `<div class="empty">Не удалось загрузить список. Проверь последний запуск GitHub Actions.</div>`;
-        toast('Ошибка загрузки');
-      } finally {
-        state.loading = false;
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = 'Обновить';
+      if (fresh.length && seen.size > fresh.length) {
+        const msg = `Появилось ${fresh.length} ${plural(fresh.length, 'новый сервер', 'новых сервера', 'новых серверов')}`;
+        toast(`🔥 ${msg}`);
+        browserNotify('Новые MTProto прокси', msg);
       }
     }
 
-    board.addEventListener('click', async event => {
-      const button = event.target.closest('button');
-      const card = event.target.closest('.card');
-      if (!button || !card) return;
-      const proxy = state.proxies.find(p => p.id === card.dataset.id);
-      if (!proxy) return;
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Ссылка скопирована');
+      } catch {
+        prompt('Скопируй ссылку вручную:', text);
+      }
+    }
 
-      if (button.dataset.action === 'connect') {
-        markUsed(proxy.id);
-        proxy.used = true;
-        updateUi();
-        window.location.href = linkFor(proxy);
-        setTimeout(() => { window.location.href = webLinkFor(proxy); }, 450);
+    function cardTemplate(p, index) {
+      const status = p.status || 'unknown';
+      const latency = p.latencyMs ? `${p.latencyMs} ms` : '—';
+      const source = p.source || 'unknown';
+      const safeRaw = escapeHtml(p.raw || '');
+      const safeWeb = escapeHtml(p.webUrl || p.raw || '#');
+
+      return `
+        <article class="card" style="animation-delay:${Math.min(index * 45, 450)}ms">
+          <div class="card-top">
+            <div class="server">
+              <h3>${escapeHtml(p.server)}:${escapeHtml(p.port)}</h3>
+              <div class="badge-row">
+                <span class="badge status-${escapeHtml(status)}"><span class="status-dot"></span>${escapeHtml(statusLabel(status))}</span>
+                <span class="badge">${escapeHtml(p.type || 'MTProto')}</span>
+              </div>
+            </div>
+            <div class="flag">${escapeHtml(p.flag || '🌐')}</div>
+          </div>
+
+          <div class="kv">
+            <div><span>Задержка TCP</span><b>${escapeHtml(latency)}</b></div>
+            <div><span>Источник</span><b>${escapeHtml(source)}</b></div>
+            <div><span>Добавлен</span><b>${escapeHtml(fmtDate(p.fetchedAt))}</b></div>
+            <div><span>Проверен</span><b>${escapeHtml(fmtDate(p.checkedAt))}</b></div>
+          </div>
+
+          <div class="card-actions">
+            <a class="btn btn-primary" href="${safeWeb}" target="_blank" rel="noopener">Подключить</a>
+            <button class="btn-ghost" data-copy="${safeRaw}">Копировать</button>
+          </div>
+        </article>`;
+    }
+
+    function render(data) {
+      $('#count').textContent = data.count ?? 0;
+      $('#updated').textContent = fmtDate(data.timestamp);
+      $('#next').textContent = fmtDate(data.next_update);
+      $('#note').textContent = data.note || 'Список загружен.';
+
+      const proxies = Array.isArray(data.proxies) ? data.proxies : [];
+      if (!proxies.length) {
+        $('#content').className = 'empty';
+        $('#content').innerHTML = 'Пока нет доступных прокси. Проверь Actions или источники в fetch-proxies.js.';
+        return;
       }
 
-      if (button.dataset.action === 'copy') {
-        try {
-          await navigator.clipboard.writeText(webLinkFor(proxy));
-          toast('Ссылка скопирована');
-        } catch (_) {
-          toast('Не получилось скопировать');
-        }
+      $('#content').className = 'grid';
+      $('#content').innerHTML = proxies.map(cardTemplate).join('');
+      $('#content').querySelectorAll('[data-copy]').forEach(btn => {
+        btn.addEventListener('click', () => copyText(btn.dataset.copy));
+      });
+    }
+
+    async function loadProxies() {
+      if (state.isLoading) return;
+      state.isLoading = true;
+      $('#refreshBtn').disabled = true;
+
+      try {
+        const res = await fetch(CONFIG.proxiesUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        state.data = data;
+        render(data);
+        detectNew(data.proxies || []);
+      } catch (error) {
+        $('#content').className = 'empty';
+        $('#content').innerHTML = `Не получилось загрузить proxies.json: <b>${escapeHtml(error.message)}</b>`;
+        toast('Не получилось загрузить список');
+      } finally {
+        state.isLoading = false;
+        $('#refreshBtn').disabled = false;
       }
+    }
+
+    $('#refreshBtn').addEventListener('click', loadProxies);
+    $('#notifyBtn').addEventListener('click', async () => {
+      if (!('Notification' in window)) {
+        toast('Браузерные уведомления здесь не поддерживаются');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      toast(permission === 'granted' ? 'Уведомления включены' : 'Уведомления не включены');
     });
 
-    refreshBtn.addEventListener('click', () => load(true));
-    resetBtn.addEventListener('click', () => {
-      localStorage.removeItem(CONFIG.usedKey);
-      state.proxies = state.proxies.map(p => ({ ...p, used: false }));
-      updateUi();
-      toast('Использованные сброшены');
-    });
-
-    load(false);
-    setInterval(() => load(false), CONFIG.refreshMs);
+    loadProxies();
+    setInterval(loadProxies, 10 * 60 * 1000);
   </script>
 </body>
 </html>
