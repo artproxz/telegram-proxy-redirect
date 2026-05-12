@@ -1,36 +1,85 @@
 {
-  "success": true,
+  "success": false,
+  "stale": true,
   "count": 3,
   "timestamp": "2026-05-11T22:31:47.015Z",
-  "next_update": "2026-05-11T22:41:47.015Z",
+  "next_update": "2026-05-12T05:30:00.000Z",
+  "schedule": {
+    "timezone": "Europe/Moscow",
+    "mode": "Проверка поставщиков каждые 4 часа с 08:30, последнее обновление в 22:00; ночью автообновление отключено.",
+    "points": ["08:30", "12:30", "16:30", "20:30", "22:00"]
+  },
+  "check": {
+    "type": "tcp_connect",
+    "timeout_ms": 3500,
+    "candidates": 0,
+    "online": 0,
+    "offline": 3
+  },
+  "providers": [
+    { "name": "ProxyFree_Ru", "url": "https://t.me/s/ProxyFree_Ru", "ok": false, "parsed": 0, "error": "Ожидается первый запуск GitHub Actions" },
+    { "name": "ProxyMTProto", "url": "https://t.me/s/ProxyMTProto", "ok": false, "parsed": 0, "error": "Ожидается первый запуск GitHub Actions" },
+    { "name": "TelMTProto", "url": "https://t.me/s/TelMTProto", "ok": false, "parsed": 0, "error": "Ожидается первый запуск GitHub Actions" },
+    { "name": "MTP_roto", "url": "https://t.me/s/MTP_roto", "ok": false, "parsed": 0, "error": "Ожидается первый запуск GitHub Actions" }
+  ],
   "proxies": [
     {
+      "id": "peyk.acharbashi.info:4515",
       "type": "MTProto",
       "server": "peyk.acharbashi.info",
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
+      "provider": "previous",
+      "online": false,
+      "pingMs": null,
+      "stale": true,
+      "firstSeenAt": "2026-05-11T22:31:48.121Z",
       "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "checkedAt": "2026-05-11T22:31:47.015Z",
+      "updatedAt": "2026-05-11T22:31:48.121Z",
+      "changeType": "stale",
+      "fingerprint": "peyk.acharbashi.info:4515:eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "raw": "tg://proxy?server=peyk.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
+      "id": "dedicated.love-internet.xyz:4515",
       "type": "MTProto",
       "server": "dedicated.love-internet.xyz",
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
+      "provider": "previous",
+      "online": false,
+      "pingMs": null,
+      "stale": true,
+      "firstSeenAt": "2026-05-11T22:31:48.121Z",
       "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "checkedAt": "2026-05-11T22:31:47.015Z",
+      "updatedAt": "2026-05-11T22:31:48.121Z",
+      "changeType": "stale",
+      "fingerprint": "dedicated.love-internet.xyz:4515:eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "raw": "tg://proxy?server=dedicated.love-internet.xyz&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     },
     {
+      "id": "alo.acharbashi.info:4515",
       "type": "MTProto",
       "server": "alo.acharbashi.info",
       "port": "4515",
       "secret": "eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "flag": "🌐",
+      "provider": "previous",
+      "online": false,
+      "pingMs": null,
+      "stale": true,
+      "firstSeenAt": "2026-05-11T22:31:48.121Z",
       "fetchedAt": "2026-05-11T22:31:48.121Z",
+      "checkedAt": "2026-05-11T22:31:47.015Z",
+      "updatedAt": "2026-05-11T22:31:48.121Z",
+      "changeType": "stale",
+      "fingerprint": "alo.acharbashi.info:4515:eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d",
       "raw": "tg://proxy?server=alo.acharbashi.info&port=4515&secret=eee9a4f23b1d768c04a8d7f39120ca5b6e626973636f7474692e79656b74616e65742e636f6d"
     }
   ],
-  "source": "ProxyFree_Ru"
+  "error": "Стартовый файл помечен как устаревший. Запусти workflow Fetch Telegram Proxies вручную или дождись расписания."
 }

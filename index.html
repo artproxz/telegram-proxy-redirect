@@ -1,288 +1,811 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTProto Proxy Hub</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #0b1120; color: #e2e8f0; min-height: 100vh; display: flex; justify-content: center; padding: 24px 12px; }
-        .container { max-width: 680px; width: 100%; background: rgba(15,23,42,0.95); backdrop-filter: blur(12px); border-radius: 24px; padding: 20px; border: 1px solid #1e293b; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px; }
-        .version { font-size: 0.8rem; color: #64748b; }
-        .stats { font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 6px; }
-        h1 { font-size: 1.4rem; font-weight: 600; text-align: center; margin: 8px 0 4px; }
-        .sub { text-align: center; font-size: 0.8rem; color: #64748b; margin-bottom: 16px; }
-        
-        .proxy-card { background: #111827; border-radius: 14px; padding: 12px; margin-bottom: 8px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border: 2px solid transparent; transition: 0.25s; position: relative; overflow: hidden; }
-        .proxy-card.active { border-color: #facc15; box-shadow: 0 0 12px rgba(250,204,21,0.2); animation: glow 2.5s infinite alternate; }
-        .proxy-card.hot { border-color: #ef4444; box-shadow: 0 0 16px rgba(239,68,68,0.3); }
-        @keyframes glow { 0% { box-shadow: 0 0 12px rgba(250,204,21,0.2); } 100% { box-shadow: 0 0 20px rgba(250,204,21,0.35); } }
-        .proxy-card.active::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #facc15, transparent); animation: shimmer 3s infinite linear; }
-        @keyframes shimmer { to { transform: translateX(200%); } }
-        .proxy-card.used { filter: grayscale(0.85); opacity: 0.7; border-color: #334155; animation: none !important; }
-        .proxy-card.used::after { content: '✓'; position: absolute; top: 6px; right: 10px; color: #22c55e; font-weight: bold; }
-        
-        .flag { font-size: 1.8rem; }
-        .hot-badge { position: absolute; top: 4px; left: 4px; font-size: 1rem; animation: pulse 1.5s infinite; pointer-events: none; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-        
-        .info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-        .host { font-weight: 500; color: #f1f5f9; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .meta { display: flex; gap: 6px; align-items: center; font-size: 0.7rem; color: #94a3b8; flex-wrap: wrap; }
-        .type-badge { background: #3b82f620; color: #60a5fa; padding: 2px 5px; border-radius: 4px; font-weight: 500; }
-        .ping-badge { padding: 2px 5px; border-radius: 4px; font-weight: 500; min-width: 45px; text-align: center; }
-        .ping-good { background: #22c55e20; color: #4ade80; }
-        .ping-mid { background: #eab30820; color: #facc15; }
-        .ping-bad { background: #ef444420; color: #f87171; }
-        .ping-pending { background: #64748b20; color: #94a3b8; }
-        .time-badge { background: #6366f120; color: #a78bfa; padding: 2px 5px; border-radius: 4px; font-weight: 500; }
-        
-        .btn { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 0.85rem; transition: 0.15s; }
-        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .proxy-card.used .btn { background: #475569; box-shadow: none; opacity: 0.8; }
-        
-        .refresh-section { text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #1e293b; }
-        .refresh-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .refresh-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
-        .refresh-btn:disabled { background: #475569; cursor: not-allowed; transform: none; }
-        .refresh-icon { width: 18px; height: 18px; }
-        .spinning { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .footer { text-align: center; margin-top: 14px; font-size: 0.75rem; color: #64748b; }
-        .loader { text-align: center; padding: 30px; color: #94a3b8; }
-        .spinner { width: 24px; height: 24px; border: 3px solid #1e293b; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
-        .error-msg { background: #450a0a; border: 1px solid #7f1d1d; padding: 10px; border-radius: 10px; text-align: center; color: #fca5a5; font-size: 0.8rem; margin-bottom: 12px; }
-        .fallback-badge { background: #78350f; color: #facc15; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
-        .last-update { text-align: center; font-size: 0.75rem; color: #64748b; margin-top: 8px; }
-        
-        .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 12px rgba(16,185,129,0.4); transform: translateX(120%); opacity: 0; transition: 0.4s; display: flex; align-items: center; gap: 10px; }
-        .toast.show { transform: translateX(0); opacity: 1; }
-        .toast button { background: none; border: none; color: rgba(255,255,255,0.9); cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
-        @media (max-width: 500px) { .proxy-card { grid-template-columns: 1fr; } .btn { width: 100%; } .toast { left: 10px; right: 10px; justify-content: space-between; } }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>MTProto Proxy Radar</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #070b18;
+      --panel: rgba(13, 20, 40, .76);
+      --panel-strong: rgba(15, 23, 42, .94);
+      --card: rgba(15, 23, 42, .88);
+      --card-hover: rgba(20, 32, 58, .96);
+      --line: rgba(148, 163, 184, .18);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --muted2: #64748b;
+      --blue: #38bdf8;
+      --green: #34d399;
+      --yellow: #facc15;
+      --red: #fb7185;
+      --violet: #a78bfa;
+      --shadow: 0 22px 80px rgba(0, 0, 0, .44);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, .22), transparent 30%),
+        radial-gradient(circle at 88% 18%, rgba(167, 139, 250, .22), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .15), transparent 34%),
+        linear-gradient(135deg, #070b18 0%, #0f172a 48%, #020617 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+      position: relative;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      border-radius: 28px;
+    }
+
+    .hero-main { padding: 28px; position: relative; overflow: hidden; }
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -90px;
+      top: -100px;
+      background: radial-gradient(circle, rgba(56,189,248,.32), transparent 68%);
+      filter: blur(4px);
+    }
+
+    .version-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 1px solid rgba(56, 189, 248, .24);
+      background: rgba(56, 189, 248, .08);
+      color: #bae6fd;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    h1 {
+      margin: 24px 0 10px;
+      font-size: clamp(2.1rem, 5vw, 4rem);
+      line-height: .95;
+      letter-spacing: -.06em;
+      max-width: 680px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .lead {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 1rem;
+      line-height: 1.65;
+      max-width: 660px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .side-panel { padding: 22px; display: grid; gap: 12px; }
+    .big-status {
+      min-height: 130px;
+      border-radius: 22px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(16,185,129,.18), rgba(56,189,248,.10));
+      border: 1px solid rgba(52,211,153,.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .big-status::after {
+      content: "";
+      position: absolute;
+      inset: auto -45px -85px auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      background: rgba(52,211,153,.18);
+      filter: blur(2px);
+    }
+
+    .status-title { color: #bbf7d0; font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .status-value { font-size: 2.6rem; font-weight: 800; letter-spacing: -.05em; margin-top: 8px; }
+    .status-caption { color: #cbd5e1; font-size: .88rem; margin-top: 5px; line-height: 1.45; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, .70);
+      border: 1px solid var(--line);
+      min-height: 100px;
+    }
+    .metric-label { color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { font-size: 1.65rem; font-weight: 800; margin-top: 10px; letter-spacing: -.04em; }
+    .metric-note { color: var(--muted2); font-size: .78rem; margin-top: 5px; line-height: 1.35; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, .68);
+      border: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+
+    .toolbar-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search {
+      width: min(360px, 100%);
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2, 6, 23, .45);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      outline: none;
+      transition: .18s;
+    }
+    .search:focus { border-color: rgba(56,189,248,.65); box-shadow: 0 0 0 4px rgba(56,189,248,.08); }
+
+    .select {
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2, 6, 23, .45);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 15px;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      cursor: pointer;
+      transition: transform .18s, filter .18s, opacity .18s, box-shadow .18s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22);
+    }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn.secondary { background: rgba(148,163,184,.14); color: #e2e8f0; box-shadow: none; border: 1px solid rgba(148,163,184,.20); }
+    .btn.green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 12px 28px rgba(16,185,129,.20); }
+    .btn.used { background: rgba(71,85,105,.72); box-shadow: none; }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      border-radius: 28px;
+      padding: 16px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .proxy-card {
+      position: relative;
+      overflow: hidden;
+      padding: 16px;
+      min-height: 178px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid rgba(148,163,184,.18);
+      transition: transform .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease, filter .2s ease;
+    }
+    .proxy-card:hover { transform: translateY(-3px); background: var(--card-hover); border-color: rgba(56,189,248,.35); }
+    .proxy-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .85;
+      pointer-events: none;
+      background: radial-gradient(circle at 18% 0%, rgba(56,189,248,.14), transparent 34%);
+    }
+    .proxy-card.is-new { animation: cardNew 1.2s ease both; border-color: rgba(52,211,153,.65); }
+    .proxy-card.is-updated { animation: cardUpdated 1.2s ease both; border-color: rgba(250,204,21,.72); }
+    .proxy-card.used { filter: grayscale(.8); opacity: .58; }
+    .proxy-card.stale { border-color: rgba(251,113,133,.42); }
+
+    @keyframes cardNew {
+      0% { transform: scale(.96); box-shadow: 0 0 0 rgba(52,211,153,0); }
+      45% { transform: scale(1.015); box-shadow: 0 0 44px rgba(52,211,153,.23); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); }
+    }
+    @keyframes cardUpdated {
+      0% { transform: translateY(8px); box-shadow: 0 0 0 rgba(250,204,21,0); }
+      45% { transform: translateY(-3px); box-shadow: 0 0 44px rgba(250,204,21,.20); }
+      100% { transform: translateY(0); box-shadow: 0 0 0 rgba(250,204,21,0); }
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .server-main { min-width: 0; }
+    .server-line { display: flex; gap: 10px; align-items: center; min-width: 0; }
+    .flag { font-size: 2rem; line-height: 1; filter: drop-shadow(0 8px 18px rgba(0,0,0,.28)); }
+    .host {
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 330px;
+    }
+    .port { color: var(--muted); font-weight: 700; font-size: .85rem; margin-top: 3px; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; position: relative; z-index: 1; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: .72rem;
+      font-weight: 800;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(148,163,184,.10);
+      color: #cbd5e1;
+    }
+    .badge.good { color: #bbf7d0; background: rgba(34,197,94,.13); border-color: rgba(34,197,94,.20); }
+    .badge.mid { color: #fef08a; background: rgba(234,179,8,.12); border-color: rgba(234,179,8,.24); }
+    .badge.bad { color: #fecdd3; background: rgba(244,63,94,.12); border-color: rgba(244,63,94,.24); }
+    .badge.blue { color: #bae6fd; background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
+    .badge.violet { color: #ddd6fe; background: rgba(167,139,250,.11); border-color: rgba(167,139,250,.22); }
+    .badge.new { color: #bbf7d0; background: rgba(16,185,129,.16); border-color: rgba(16,185,129,.28); }
+    .badge.updated { color: #fef3c7; background: rgba(245,158,11,.16); border-color: rgba(245,158,11,.28); }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    .actions .btn { flex: 1; padding: 11px 12px; }
+
+    .provider-panel {
+      margin-top: 14px;
+      border-radius: 24px;
+      padding: 16px;
+      background: rgba(15,23,42,.56);
+      border: 1px solid var(--line);
+    }
+    .provider-title { font-weight: 800; margin-bottom: 10px; }
+    .providers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .provider {
+      padding: 11px;
+      border-radius: 16px;
+      background: rgba(2,6,23,.38);
+      border: 1px solid rgba(148,163,184,.14);
+      min-width: 0;
+    }
+    .provider-name { font-weight: 800; font-size: .8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .provider-meta { color: var(--muted); font-size: .74rem; margin-top: 5px; }
+
+    .toast-stack { position: fixed; right: 18px; top: 18px; z-index: 9999; display: grid; gap: 10px; width: min(380px, calc(100% - 36px)); }
+    .toast {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 15px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, .94);
+      border: 1px solid rgba(52,211,153,.28);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      transform: translateX(115%);
+      opacity: 0;
+      transition: .34s ease;
+    }
+    .toast.show { transform: translateX(0); opacity: 1; }
+    .toast strong { display: block; font-size: .92rem; }
+    .toast span { color: var(--muted); font-size: .78rem; display: block; margin-top: 2px; }
+    .toast button { color: #cbd5e1; background: transparent; border: 0; cursor: pointer; font-size: 1.1rem; }
+
+    .empty {
+      padding: 42px 18px;
+      text-align: center;
+      color: var(--muted);
+      border-radius: 24px;
+      border: 1px dashed rgba(148,163,184,.24);
+      background: rgba(2,6,23,.26);
+    }
+    .loader { padding: 42px; text-align: center; color: var(--muted); }
+    .spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto 12px;
+      border-radius: 999px;
+      border: 3px solid rgba(148,163,184,.22);
+      border-top-color: var(--blue);
+      animation: spin .85s linear infinite;
+    }
+
+    @media (max-width: 920px) {
+      .hero { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr; }
+      .providers { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .toolbar-left { width: 100%; }
+      .search, .select { width: 100%; }
+      .toolbar .btn { width: 100%; }
+    }
+    @media (max-width: 560px) {
+      .page { width: min(100% - 20px, 1180px); padding-top: 14px; }
+      .hero-main, .side-panel { padding: 18px; border-radius: 22px; }
+      .board { padding: 10px; border-radius: 22px; }
+      .proxy-card { border-radius: 20px; }
+      .providers { grid-template-columns: 1fr; }
+      .version-row { align-items: flex-start; flex-direction: column; }
+      .actions { flex-direction: column; }
+      .actions .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
-<div class="container" id="app"><div class="loader"><div class="spinner"></div>Загрузка...</div></div>
+  <div class="toast-stack" id="toastStack"></div>
+  <main class="page" id="app">
+    <div class="loader"><div class="spinner"></div>Загружаю табло прокси…</div>
+  </main>
 
-<script>
+  <script>
     const CONFIG = {
-        PROXIES_URL: "https://artproxz.github.io/telegram-proxy-redirect/proxies.json",
-        PING_INTERVAL: 10000,
-        MAX_PROXIES: 12,
-        USED_KEY: "tg_used_v304",
-        SEEN_HASHES: "tg_hashes_v304",
-        FALLBACK: [
-            {type:"MTProto",server:"185.173.36.38",port:"443",secret:"eeRighJJvXrFGRMCIMJdCQ",flag:"🇳🇱"},
-            {type:"MTProto",server:"91.107.255.159",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇩🇪"},
-            {type:"MTProto",server:"65.109.153.70",port:"8443",secret:"1320PuNyHw_LQKT_Y7XNJw",flag:"🇫🇮"},
-            {type:"MTProto",server:"51.15.246.20",port:"8443",secret:"eeNEgYdJvXrFGRMCIMJdCQ",flag:"🇫🇷"},
-            {type:"MTProto",server:"149.154.167.91",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
-            {type:"MTProto",server:"149.154.167.103",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬"},
-            {type:"MTProto",server:"149.154.167.92",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.171.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.175.100",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.175.102",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"},
-            {type:"MTProto",server:"149.154.167.200",port:"8443",secret:"dd070b1b71f82167e279061e9b53f4f1",flag:"🇬🇧"}
-        ]
+      PROXIES_URL: './proxies.json',
+      AUTO_REFRESH_MS: 3 * 60 * 1000,
+      SNAPSHOT_KEY: 'mtproto_proxy_snapshot_v5',
+      USED_KEY: 'mtproto_proxy_used_v5',
+      NOTIFY_KEY: 'mtproto_proxy_notifications_v5'
     };
 
-    let state = { proxies: [], pingTimer: null, usingFallback: false, lastUpdate: null, isLoading: false };
-
-    const getUsed = () => { try { return new Set(JSON.parse(localStorage.getItem(CONFIG.USED_KEY) || "[]")); } catch { return new Set(); } };
-    const markUsed = (k) => { try { const s = getUsed(); s.add(k); localStorage.setItem(CONFIG.USED_KEY, JSON.stringify([...s])); } catch(e) {} };
-    const isUsed = (k) => getUsed().has(k);
-
-    const getSeenHashes = () => { try { return new Set(JSON.parse(localStorage.getItem(CONFIG.SEEN_HASHES) || "[]")); } catch { return new Set(); } };
-    const saveSeenHashes = (hashes) => { try { localStorage.setItem(CONFIG.SEEN_HASHES, JSON.stringify([...hashes])); } catch(e) {} };
-    const makeHash = (p) => `${p.server}:${p.port}:${p.secret}`;
-
-    const notify = (msg, duration = 8000) => {
-        const t = document.createElement("div");
-        t.className = "toast";
-        t.innerHTML = `<span>✨ ${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
-        document.body.appendChild(t);
-        requestAnimationFrame(() => t.classList.add("show"));
-        setTimeout(() => { if(t.parentNode) t.remove(); }, duration);
+    const state = {
+      data: null,
+      proxies: [],
+      query: '',
+      filter: 'all',
+      loading: false,
+      autoTimer: null,
+      hasSnapshot: false
     };
 
-    const checkPing = async (server, port) => {
-        return new Promise(resolve => {
-            const start = performance.now();
-            const img = new Image();
-            const timeout = setTimeout(() => { cleanup(); resolve(null); }, 2000);
-            const cleanup = () => { clearTimeout(timeout); img.onload = img.onerror = null; img.src = ""; };
-            img.onload = img.onerror = () => { cleanup(); resolve(Math.round(performance.now() - start)); };
-            img.src = `https://${server}:${port}/favicon.ico?_=${Date.now()}`;
-        });
+    const escapeHtml = value => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const readJson = (key, fallback) => {
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch { return fallback; }
+    };
+    const writeJson = (key, value) => {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
     };
 
-    const formatDateTime = (dateStr) => {
-        if (!dateStr) return '—';
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-        
-        if (minutes < 1) return 'Только что';
-        if (minutes < 60) return `${minutes} мин. назад`;
-        if (hours < 24) return `${hours} ч. назад`;
-        if (days < 7) return `${days} дн. назад`;
-        
-        return date.toLocaleString('ru-RU', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
+    const getUsed = () => new Set(readJson(CONFIG.USED_KEY, []));
+    const markUsed = id => {
+      const used = getUsed();
+      used.add(id);
+      writeJson(CONFIG.USED_KEY, [...used]);
     };
 
-    const loadProxies = async () => {
-        if (state.isLoading) return;
-        state.isLoading = true;
-        const btn = document.getElementById("refresh-btn"), icon = document.getElementById("refresh-icon");
-        if (btn) { btn.disabled = true; if (icon) icon.classList.add("spinning"); }
-
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            const res = await fetch(CONFIG.PROXIES_URL, { cache: "no-store", signal: controller.signal });
-            clearTimeout(timeout);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            
-            const data = await res.json();
-            state.lastUpdate = data.timestamp ? new Date(data.timestamp) : new Date();
-            
-            if (data.success && data.proxies?.length >= 3) {
-                const valid = data.proxies.filter(p => p.server && p.server !== "Unknown" && p.port && p.secret?.length > 10);
-                const newProxies = valid.slice(0, CONFIG.MAX_PROXIES).map(p => ({
-                    ...p, key: `${p.server}:${p.port}`, used: isUsed(`${p.server}:${p.port}`),
-                    fromFallback: false, fetchedAt: p.fetchedAt || data.timestamp
-                }));
-                
-                const seen = getSeenHashes();
-                const trulyNew = newProxies.filter(p => !seen.has(makeHash(p)));
-                if (trulyNew.length > 0) {
-                    notify(`🔥 +${trulyNew.length} новых прокси`);
-                    trulyNew.forEach(p => seen.add(makeHash(p)));
-                    saveSeenHashes(seen);
-                }
-                
-                newProxies.sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
-                state.proxies = newProxies;
-                state.usingFallback = false;
-            } else { throw new Error(`Мало прокси`); }
-        } catch (e) {
-            console.warn("❌ Ошибка:", e.message);
-            state.proxies = CONFIG.FALLBACK.slice(0, CONFIG.MAX_PROXIES).map(p => ({
-                ...p, key: `${p.server}:${p.port}`, used: isUsed(`${p.server}:${p.port}`),
-                fromFallback: true, fetchedAt: new Date().toISOString()
-            }));
-            state.usingFallback = true;
-        }
-        state.isLoading = false;
-        if (btn) { btn.disabled = false; if (icon) icon.classList.remove("spinning"); }
-        render();
-        startPingLoop();
+    const formatRelative = dateLike => {
+      if (!dateLike) return '—';
+      const date = new Date(dateLike);
+      if (Number.isNaN(date.getTime())) return '—';
+      const diff = Date.now() - date.getTime();
+      const min = Math.max(0, Math.floor(diff / 60000));
+      const h = Math.floor(min / 60);
+      const d = Math.floor(h / 24);
+      if (min < 1) return 'только что';
+      if (min < 60) return `${min} мин назад`;
+      if (h < 24) return `${h} ч назад`;
+      if (d < 7) return `${d} дн назад`;
+      return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
 
-    const startPingLoop = () => {
-        clearInterval(state.pingTimer);
-        const loop = async () => {
-            for (const p of state.proxies) {
-                const el = document.getElementById(`ping-${p.key}`);
-                if (!el) continue;
-                const ms = await checkPing(p.server, p.port);
-                if (el) {
-                    if (ms === null) { el.className = "ping-badge ping-pending"; el.textContent = "—"; }
-                    else if (ms < 200) { el.className = "ping-badge ping-good"; el.textContent = `${ms}ms`; }
-                    else if (ms < 500) { el.className = "ping-badge ping-mid"; el.textContent = `${ms}ms`; }
-                    else { el.className = "ping-badge ping-bad"; el.textContent = `${ms}ms`; }
-                }
-                await new Promise(r => setTimeout(r, 150));
-            }
+    const formatFull = dateLike => {
+      if (!dateLike) return '—';
+      const date = new Date(dateLike);
+      if (Number.isNaN(date.getTime())) return '—';
+      return date.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'medium' });
+    };
+
+    const pingBadgeClass = ping => {
+      if (typeof ping !== 'number') return 'bad';
+      if (ping < 200) return 'good';
+      if (ping < 500) return 'mid';
+      return 'bad';
+    };
+
+    const pingLabel = proxy => {
+      if (!proxy.online) return 'offline';
+      if (typeof proxy.pingMs !== 'number') return 'нет замера';
+      return `${proxy.pingMs} ms`;
+    };
+
+    const getSnapshot = () => readJson(CONFIG.SNAPSHOT_KEY, {});
+    const saveSnapshot = proxies => {
+      const snap = {};
+      proxies.forEach(p => {
+        snap[p.id] = {
+          fingerprint: p.fingerprint || `${p.server}:${p.port}:${p.secret}`,
+          updatedAt: p.updatedAt || null,
+          checkedAt: p.checkedAt || null,
+          online: p.online !== false
         };
-        loop();
-        state.pingTimer = setInterval(loop, CONFIG.PING_INTERVAL);
+      });
+      writeJson(CONFIG.SNAPSHOT_KEY, snap);
+    };
+
+    const detectUiEvents = proxies => {
+      const snap = getSnapshot();
+      state.hasSnapshot = Object.keys(snap).length > 0;
+      return proxies.map(proxy => {
+        const old = snap[proxy.id];
+        let uiEvent = '';
+        if (!old) uiEvent = 'new';
+        else if (old.fingerprint !== (proxy.fingerprint || `${proxy.server}:${proxy.port}:${proxy.secret}`)) uiEvent = 'updated';
+        else if (old.updatedAt && proxy.updatedAt && old.updatedAt !== proxy.updatedAt && proxy.changeType && proxy.changeType !== 'same') uiEvent = proxy.changeType;
+        else if (old.online === false && proxy.online === true) uiEvent = 'recovered';
+        return { ...proxy, uiEvent, used: getUsed().has(proxy.id) };
+      });
+    };
+
+    const notify = (title, text = '', system = true) => {
+      const root = document.getElementById('toastStack');
+      const item = document.createElement('div');
+      item.className = 'toast';
+      item.innerHTML = `<div><strong>${escapeHtml(title)}</strong>${text ? `<span>${escapeHtml(text)}</span>` : ''}</div><button type="button" aria-label="Закрыть">×</button>`;
+      item.querySelector('button').addEventListener('click', () => item.remove());
+      root.appendChild(item);
+      requestAnimationFrame(() => item.classList.add('show'));
+      setTimeout(() => item.remove(), 8500);
+
+      if (system && localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled' && 'Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body: text || 'MTProto Proxy Radar' }); } catch (_) {}
+      }
+    };
+
+    const requestNotifications = async () => {
+      if (!('Notification' in window)) {
+        notify('Браузерные уведомления недоступны', 'Но всплывающие уведомления внутри страницы будут работать.', false);
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        localStorage.setItem(CONFIG.NOTIFY_KEY, 'enabled');
+        notify('Уведомления включены', 'Теперь новые и обновлённые серверы будут заметнее.', false);
+      } else {
+        localStorage.setItem(CONFIG.NOTIFY_KEY, 'disabled');
+        notify('Уведомления не включены', 'Можно продолжать пользоваться табло без них.', false);
+      }
+      render();
+    };
+
+    const webProxyLink = proxy => `https://t.me/proxy?server=${encodeURIComponent(proxy.server)}&port=${encodeURIComponent(proxy.port)}&secret=${encodeURIComponent(proxy.secret)}`;
+
+    window.connectProxy = id => {
+      const proxy = state.proxies.find(p => p.id === id);
+      if (!proxy) return;
+      markUsed(proxy.id);
+      proxy.used = true;
+      render();
+      window.location.href = proxy.raw || webProxyLink(proxy);
+    };
+
+    window.copyProxy = async id => {
+      const proxy = state.proxies.find(p => p.id === id);
+      if (!proxy) return;
+      const link = proxy.raw || webProxyLink(proxy);
+      try {
+        await navigator.clipboard.writeText(link);
+        notify('Ссылка скопирована', `${proxy.server}:${proxy.port}`, false);
+      } catch (_) {
+        notify('Не удалось скопировать автоматически', 'Скопируй ссылку из адреса кнопки Telegram.', false);
+      }
+    };
+
+    window.setFilter = value => { state.filter = value; render(); };
+    window.setQuery = value => { state.query = value.trim().toLowerCase(); render(); };
+    window.resetUsed = () => {
+      localStorage.removeItem(CONFIG.USED_KEY);
+      state.proxies = state.proxies.map(p => ({ ...p, used: false }));
+      notify('Использованные сброшены', 'Все карточки снова активны для этого браузера.', false);
+      render();
+    };
+
+    const loadProxies = async (manual = false) => {
+      if (state.loading) return;
+      state.loading = true;
+      render();
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        const response = await fetch(`${CONFIG.PROXIES_URL}?v=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timeout);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const rawProxies = Array.isArray(data.proxies) ? data.proxies : [];
+        const withEvents = detectUiEvents(rawProxies)
+          .filter(p => p.server && p.port && p.secret)
+          .sort((a, b) => {
+            if (a.used !== b.used) return a.used ? 1 : -1;
+            if ((a.online !== false) !== (b.online !== false)) return a.online === false ? 1 : -1;
+            return (a.pingMs ?? 999999) - (b.pingMs ?? 999999);
+          });
+
+        const changed = withEvents.filter(p => p.uiEvent && ['new', 'updated', 'recovered', 'latency_changed'].includes(p.uiEvent));
+        if ((state.hasSnapshot || manual) && changed.length) {
+          const newCount = changed.filter(p => p.uiEvent === 'new').length;
+          const updatedCount = changed.length - newCount;
+          notify('Табло обновилось', `${newCount ? `новых: ${newCount}` : ''}${newCount && updatedCount ? ', ' : ''}${updatedCount ? `изменений: ${updatedCount}` : ''}`.trim());
+        }
+
+        state.data = data;
+        state.proxies = withEvents;
+        saveSnapshot(withEvents);
+      } catch (error) {
+        console.error(error);
+        notify('Не удалось загрузить proxies.json', 'Проверь GitHub Pages, путь к файлу или последний Actions run.', false);
+      } finally {
+        state.loading = false;
+        render();
+      }
+    };
+
+    const filteredProxies = () => {
+      return state.proxies.filter(proxy => {
+        const q = state.query;
+        const matchesQuery = !q || `${proxy.server} ${proxy.port} ${proxy.provider || ''}`.toLowerCase().includes(q);
+        const matchesFilter =
+          state.filter === 'all' ||
+          (state.filter === 'fresh' && !proxy.used) ||
+          (state.filter === 'used' && proxy.used) ||
+          (state.filter === 'new' && proxy.uiEvent) ||
+          (state.filter === 'fast' && proxy.online !== false && typeof proxy.pingMs === 'number' && proxy.pingMs < 200);
+        return matchesQuery && matchesFilter;
+      });
+    };
+
+    const eventBadge = proxy => {
+      if (proxy.uiEvent === 'new') return '<span class="badge new">✨ новый</span>';
+      if (proxy.uiEvent === 'updated') return '<span class="badge updated">⚡ обновлён</span>';
+      if (proxy.uiEvent === 'recovered') return '<span class="badge new">🟢 снова живой</span>';
+      if (proxy.uiEvent === 'latency_changed') return '<span class="badge updated">📈 пинг изменился</span>';
+      if (proxy.changeType === 'stale' || proxy.stale) return '<span class="badge bad">⚠️ старый список</span>';
+      return '';
+    };
+
+    const proxyCard = proxy => {
+      const cardClasses = [
+        'proxy-card',
+        proxy.used ? 'used' : '',
+        proxy.stale ? 'stale' : '',
+        proxy.uiEvent === 'new' || proxy.uiEvent === 'recovered' ? 'is-new' : '',
+        ['updated', 'latency_changed'].includes(proxy.uiEvent) ? 'is-updated' : ''
+      ].filter(Boolean).join(' ');
+
+      const pingClass = proxy.online === false ? 'bad' : pingBadgeClass(proxy.pingMs);
+      const connectText = proxy.used ? 'Ещё раз подключить' : 'Подключить';
+
+      return `
+        <article class="${cardClasses}" data-id="${escapeHtml(proxy.id)}">
+          <div class="card-top">
+            <div class="server-main">
+              <div class="server-line">
+                <div class="flag">${escapeHtml(proxy.flag || '🌐')}</div>
+                <div style="min-width:0">
+                  <div class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</div>
+                  <div class="port">порт ${escapeHtml(proxy.port)} · ${escapeHtml(proxy.type || 'MTProto')}</div>
+                </div>
+              </div>
+            </div>
+            ${proxy.used ? '<span class="badge">✓ использован</span>' : '<span class="badge good">готов</span>'}
+          </div>
+
+          <div class="badges">
+            <span class="badge ${pingClass}">📡 ${escapeHtml(pingLabel(proxy))}</span>
+            <span class="badge blue">🧪 TCP-connect</span>
+            <span class="badge violet">🕐 ${escapeHtml(formatRelative(proxy.checkedAt || proxy.fetchedAt))}</span>
+            <span class="badge">📦 ${escapeHtml(proxy.provider || 'provider')}</span>
+            ${eventBadge(proxy)}
+          </div>
+
+          <div class="actions">
+            <button class="btn ${proxy.used ? 'used' : 'green'}" type="button" onclick='connectProxy(${JSON.stringify(proxy.id)})'>${connectText}</button>
+            <button class="btn secondary" type="button" onclick='copyProxy(${JSON.stringify(proxy.id)})'>Копия</button>
+          </div>
+        </article>`;
+    };
+
+    const providerCards = () => {
+      const providers = state.data?.providers || [];
+      if (!providers.length) return '';
+      return `
+        <section class="provider-panel">
+          <div class="provider-title">Проверка поставщиков</div>
+          <div class="providers">
+            ${providers.map(p => `
+              <div class="provider">
+                <div class="provider-name">${p.ok ? '🟢' : '🔴'} ${escapeHtml(p.name)}</div>
+                <div class="provider-meta">найдено: ${escapeHtml(p.parsed ?? 0)}${p.error ? ` · ${escapeHtml(p.error)}` : ''}</div>
+              </div>`).join('')}
+          </div>
+        </section>`;
     };
 
     const render = () => {
-        const sorted = [...state.proxies].sort((a, b) => {
-            if (a.used !== b.used) return a.used - b.used;
-            return new Date(b.fetchedAt) - new Date(a.fetchedAt);
-        }).slice(0, CONFIG.MAX_PROXIES);
-        
-        const hotKeys = new Set();
-        let hotCount = 0;
-        for (const p of sorted) {
-            if (!p.used && !p.fromFallback && hotCount < 3) {
-                hotKeys.add(p.key);
-                hotCount++;
-            }
-        }
-        
-        let lastUpdateText = '--:--';
-        if (state.lastUpdate) lastUpdateText = state.lastUpdate.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-        
-        let html = `
-            <div class="header"><div class="version">v4.0.0</div><div class="stats">📡 ${sorted.length}${state.usingFallback ? ' <span class="fallback-badge">резерв</span>' : ''}</div></div>
-            <h1>MTProto для Telegram</h1>
-            <div class="sub">Источник: @ProxyFree_Ru • GitHub Actions каждые 10 мин</div>
-            <div class="last-update">Обновлено: <strong>${lastUpdateText}</strong></div>`;
-        
-        sorted.forEach(p => {
-            const isHot = hotKeys.has(p.key);
-            const addedTime = formatDateTime(p.fetchedAt);
-            html += `
-                <div class="proxy-card ${p.used ? 'used' : 'active'} ${isHot ? 'hot' : ''}" data-key="${p.key}">
-                    ${isHot ? '<span class="hot-badge">🔥</span>' : ''}
-                    <div class="flag">${p.flag || '🌐'}</div>
-                    <div class="info">
-                        <div class="host" title="${p.key}">${p.server}${p.fromFallback ? ' 🔒' : ''}</div>
-                        <div class="meta">
-                            <span class="type-badge">${p.type}</span>
-                            <span class="ping-badge ping-pending" id="ping-${p.key}">🔄</span>
-                            <span class="time-badge" title="${new Date(p.fetchedAt).toLocaleString('ru-RU')}">🕐 ${addedTime}</span>
-                        </div>
-                    </div>
-                    <button class="btn" onclick="connectProxy('${p.raw}')">Подключить</button>
-                </div>`;
-        });
-        
-        if (sorted.length === 0) html += `<div class="loader"><div class="spinner"></div>Нет прокси</div>`;
-        html += `
-            <div class="refresh-section">
-                <button class="refresh-btn" id="refresh-btn" onclick="loadProxies()">
-                    <svg class="refresh-icon" id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                    </svg>
-                    Обновить список
-                </button>
+      const app = document.getElementById('app');
+      const data = state.data;
+      const proxies = filteredProxies();
+      const freshCount = state.proxies.filter(p => !p.used).length;
+      const usedCount = state.proxies.filter(p => p.used).length;
+      const fast = state.proxies.filter(p => p.online !== false && typeof p.pingMs === 'number' && p.pingMs < 200).length;
+      const bestPing = state.proxies.filter(p => p.online !== false && typeof p.pingMs === 'number').sort((a, b) => a.pingMs - b.pingMs)[0];
+      const statusValue = data ? (data.success ? 'Online' : data.stale ? 'Stale' : 'Offline') : 'Loading';
+      const statusCaption = data
+        ? data.success
+          ? `Последняя проверка: ${formatFull(data.timestamp)}`
+          : (data.error || 'Нет свежих рабочих серверов')
+        : 'Загружаю список серверов';
+      const nextUpdate = data?.next_update ? formatFull(data.next_update) : '—';
+      const notifyEnabled = localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled';
+
+      app.innerHTML = `
+        <section class="hero">
+          <div class="hero-main glass">
+            <div class="version-row">
+              <span class="eyebrow">⚡ MTProto Proxy Radar · v5</span>
+              <span class="eyebrow">${data?.schedule?.timezone ? escapeHtml(data.schedule.timezone) : 'GitHub Actions'}</span>
             </div>
-            <div class="footer">Пинг каждые 10 сек. Все прокси-сервера актуальны.</div>`;
-        document.getElementById("app").innerHTML = html;
+            <h1>Живые прокси для Telegram без гадания</h1>
+            <p class="lead">Поставщики проверяются GitHub Actions, серверы проходят TCP-проверку, а у каждого пользователя свой список “использованных”: перешёл по ссылке — карточка тухнет только у него.</p>
+            <div class="hero-actions">
+              <button class="btn green" type="button" onclick="loadProxies(true)" ${state.loading ? 'disabled' : ''}>${state.loading ? '<span class="spin">↻</span> Обновляю' : '↻ Обновить табло'}</button>
+              <button class="btn secondary" type="button" onclick="requestNotifications()">${notifyEnabled ? '🔔 Уведомления включены' : '🔔 Включить уведомления'}</button>
+            </div>
+          </div>
+
+          <aside class="side-panel glass">
+            <div class="big-status">
+              <div class="status-title">Состояние табло</div>
+              <div class="status-value">${escapeHtml(statusValue)}</div>
+              <div class="status-caption">${escapeHtml(statusCaption)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Следующее обновление</div>
+              <div class="metric-value" style="font-size:1.18rem">${escapeHtml(nextUpdate)}</div>
+              <div class="metric-note">После 22:00 автообновление спит до 08:30.</div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="metrics">
+          <div class="metric"><div class="metric-label">Рабочих серверов</div><div class="metric-value">${state.proxies.length}</div><div class="metric-note">выводятся только прошедшие проверку</div></div>
+          <div class="metric"><div class="metric-label">Свежих у тебя</div><div class="metric-value">${freshCount}</div><div class="metric-note">использовано: ${usedCount}</div></div>
+          <div class="metric"><div class="metric-label">Лучший пинг</div><div class="metric-value">${bestPing ? `${bestPing.pingMs} ms` : '—'}</div><div class="metric-note">быстрых до 200 ms: ${fast}</div></div>
+        </section>
+
+        <section class="board">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" type="search" placeholder="Поиск по серверу или поставщику" value="${escapeHtml(state.query)}" oninput="setQuery(this.value)" />
+              <select class="select" onchange="setFilter(this.value)">
+                <option value="all" ${state.filter === 'all' ? 'selected' : ''}>Все</option>
+                <option value="fresh" ${state.filter === 'fresh' ? 'selected' : ''}>Не использованные</option>
+                <option value="used" ${state.filter === 'used' ? 'selected' : ''}>Использованные</option>
+                <option value="new" ${state.filter === 'new' ? 'selected' : ''}>Новые/обновлённые</option>
+                <option value="fast" ${state.filter === 'fast' ? 'selected' : ''}>Пинг до 200 ms</option>
+              </select>
+            </div>
+            <button class="btn secondary" type="button" onclick="resetUsed()">Сбросить использованные</button>
+          </div>
+
+          ${state.loading && !state.proxies.length ? '<div class="loader"><div class="spinner"></div>Загружаю список…</div>' : ''}
+          ${!state.loading && !proxies.length ? '<div class="empty">Подходящих карточек нет. Попробуй сбросить фильтр или обновить табло.</div>' : ''}
+          <div class="cards">${proxies.map(proxyCard).join('')}</div>
+          ${providerCards()}
+        </section>
+      `;
     };
 
-    window.connectProxy = (raw) => {
-        const m = raw.match(/server=([^&]+)&port=(\d+)/);
-        if (m) {
-            markUsed(`${m[1]}:${m[2]}`);
-            const card = document.querySelector(`.proxy-card[data-key="${m[1]}:${m[2]}"]`);
-            if (card) {
-                card.classList.add("used");
-                const btn = card.querySelector(".btn");
-                if (btn) { btn.textContent = "✓"; setTimeout(() => { if(btn) btn.textContent = "Подключить"; }, 1000); }
-            }
-        }
-        location.href = raw;
-    };
+    window.loadProxies = loadProxies;
+    window.requestNotifications = requestNotifications;
 
-    document.addEventListener("DOMContentLoaded", () => { console.log("✅ Запущено"); loadProxies(); });
-</script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProxies(false);
+      clearInterval(state.autoTimer);
+      state.autoTimer = setInterval(() => loadProxies(false), CONFIG.AUTO_REFRESH_MS);
+    });
+  </script>
 </body>
 </html>
