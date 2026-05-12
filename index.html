@@ -4,40 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark" />
-  <title>MTProto Proxy Radar</title>
+  <title>Рабочие Telegram Proxy</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap');
 
     :root {
-      --bg: #070b18;
-      --panel: rgba(13, 20, 40, .76);
-      --panel-strong: rgba(15, 23, 42, .94);
+      --bg: #050816;
+      --panel: rgba(14, 22, 42, .78);
       --card: rgba(15, 23, 42, .88);
-      --card-hover: rgba(20, 32, 58, .96);
+      --card2: rgba(20, 32, 58, .96);
       --line: rgba(148, 163, 184, .18);
       --text: #f8fafc;
       --muted: #94a3b8;
       --muted2: #64748b;
-      --blue: #38bdf8;
       --green: #34d399;
+      --blue: #38bdf8;
       --yellow: #facc15;
       --red: #fb7185;
-      --violet: #a78bfa;
-      --shadow: 0 22px 80px rgba(0, 0, 0, .44);
+      --shadow: 0 24px 80px rgba(0, 0, 0, .45);
     }
 
     * { box-sizing: border-box; }
-    html { min-height: 100%; background: var(--bg); }
+    html { background: var(--bg); min-height: 100%; }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, .22), transparent 30%),
-        radial-gradient(circle at 88% 18%, rgba(167, 139, 250, .22), transparent 32%),
-        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .15), transparent 34%),
-        linear-gradient(135deg, #070b18 0%, #0f172a 48%, #020617 100%);
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, .24), transparent 32%),
+        radial-gradient(circle at 88% 18%, rgba(52, 211, 153, .18), transparent 30%),
+        linear-gradient(135deg, #050816 0%, #0f172a 52%, #020617 100%);
       overflow-x: hidden;
     }
 
@@ -47,25 +44,24 @@
       inset: 0;
       pointer-events: none;
       background-image:
-        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-      background-size: 44px 44px;
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 46px 46px;
       mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
     }
 
     .page {
-      width: min(1180px, calc(100% - 32px));
+      width: min(980px, calc(100% - 28px));
       margin: 0 auto;
       padding: 28px 0 42px;
       position: relative;
     }
 
-    .hero {
+    .top {
       display: grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap: 18px;
-      align-items: stretch;
-      margin-bottom: 18px;
+      grid-template-columns: 1fr 280px;
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
     .glass {
@@ -76,47 +72,43 @@
       border-radius: 28px;
     }
 
-    .hero-main { padding: 28px; position: relative; overflow: hidden; }
-    .hero-main::after {
+    .hero {
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
       content: "";
       position: absolute;
-      width: 260px;
-      height: 260px;
-      right: -90px;
+      right: -80px;
       top: -100px;
-      background: radial-gradient(circle, rgba(56,189,248,.32), transparent 68%);
-      filter: blur(4px);
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(52,211,153,.28), transparent 70%);
+      border-radius: 999px;
     }
 
-    .version-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      position: relative;
-      z-index: 1;
-    }
-
-    .eyebrow {
+    .badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      border: 1px solid rgba(56, 189, 248, .24);
-      background: rgba(56, 189, 248, .08);
-      color: #bae6fd;
+      gap: 7px;
       border-radius: 999px;
+      padding: 7px 11px;
       font-size: .78rem;
-      font-weight: 700;
-      letter-spacing: .02em;
+      font-weight: 900;
+      border: 1px solid rgba(52,211,153,.22);
+      background: rgba(52,211,153,.10);
+      color: #bbf7d0;
+      white-space: nowrap;
     }
 
     h1 {
-      margin: 24px 0 10px;
-      font-size: clamp(2.1rem, 5vw, 4rem);
-      line-height: .95;
-      letter-spacing: -.06em;
-      max-width: 680px;
+      margin: 18px 0 8px;
+      font-size: clamp(2.15rem, 6vw, 4.4rem);
+      line-height: .92;
+      letter-spacing: -.07em;
+      max-width: 720px;
       position: relative;
       z-index: 1;
     }
@@ -124,108 +116,75 @@
     .lead {
       margin: 0;
       color: #cbd5e1;
+      line-height: 1.55;
+      max-width: 640px;
       font-size: 1rem;
-      line-height: 1.65;
-      max-width: 660px;
       position: relative;
       z-index: 1;
     }
 
-    .hero-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 22px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .side-panel { padding: 22px; display: grid; gap: 12px; }
-    .big-status {
-      min-height: 130px;
-      border-radius: 22px;
-      padding: 18px;
-      background: linear-gradient(135deg, rgba(16,185,129,.18), rgba(56,189,248,.10));
-      border: 1px solid rgba(52,211,153,.22);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .big-status::after {
-      content: "";
-      position: absolute;
-      inset: auto -45px -85px auto;
-      width: 180px;
-      height: 180px;
-      border-radius: 999px;
-      background: rgba(52,211,153,.18);
-      filter: blur(2px);
-    }
-
-    .status-title { color: #bbf7d0; font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-    .status-value { font-size: 2.6rem; font-weight: 800; letter-spacing: -.05em; margin-top: 8px; }
-    .status-caption { color: #cbd5e1; font-size: .88rem; margin-top: 5px; line-height: 1.45; }
-
-    .metrics {
+    .status {
+      padding: 22px;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 18px;
+      align-content: space-between;
+      min-height: 210px;
     }
 
-    .metric {
-      padding: 16px;
-      border-radius: 22px;
-      background: rgba(15, 23, 42, .70);
-      border: 1px solid var(--line);
-      min-height: 100px;
+    .status-label {
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
     }
-    .metric-label { color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-    .metric-value { font-size: 1.65rem; font-weight: 800; margin-top: 10px; letter-spacing: -.04em; }
-    .metric-note { color: var(--muted2); font-size: .78rem; margin-top: 5px; line-height: 1.35; }
 
-    .toolbar {
+    .status-value {
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: -.06em;
+      margin-top: 9px;
+    }
+
+    .status-note {
+      color: #cbd5e1;
+      line-height: 1.45;
+      font-size: .9rem;
+      margin-top: 8px;
+    }
+
+    .bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      padding: 14px;
+      gap: 10px;
+      padding: 13px;
+      margin-bottom: 14px;
       border-radius: 24px;
       background: rgba(15, 23, 42, .68);
       border: 1px solid var(--line);
-      margin-bottom: 14px;
     }
 
-    .toolbar-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .search {
-      width: min(360px, 100%);
-      border: 1px solid rgba(148,163,184,.22);
-      background: rgba(2, 6, 23, .45);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 14px;
-      outline: none;
-      transition: .18s;
+    .bar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    .search:focus { border-color: rgba(56,189,248,.65); box-shadow: 0 0 0 4px rgba(56,189,248,.08); }
 
-    .select {
-      border: 1px solid rgba(148,163,184,.22);
-      background: rgba(2, 6, 23, .45);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 14px;
-      outline: none;
+    .mini {
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 700;
     }
 
     .btn {
       appearance: none;
       border: 0;
-      border-radius: 14px;
+      border-radius: 15px;
       padding: 12px 15px;
-      font-weight: 800;
-      color: white;
-      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #10b981, #059669);
       cursor: pointer;
       transition: transform .18s, filter .18s, opacity .18s, box-shadow .18s;
       display: inline-flex;
@@ -234,169 +193,132 @@
       gap: 8px;
       text-decoration: none;
       white-space: nowrap;
-      box-shadow: 0 12px 28px rgba(37, 99, 235, .22);
+      box-shadow: 0 14px 30px rgba(16,185,129,.20);
     }
     .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
     .btn:active { transform: translateY(0); }
     .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn.secondary { background: rgba(148,163,184,.14); color: #e2e8f0; box-shadow: none; border: 1px solid rgba(148,163,184,.20); }
-    .btn.green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 12px 28px rgba(16,185,129,.20); }
     .btn.used { background: rgba(71,85,105,.72); box-shadow: none; }
 
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
     .board {
+      padding: 14px;
+      border-radius: 28px;
       background: var(--panel);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
       backdrop-filter: blur(18px);
-      border-radius: 28px;
-      padding: 16px;
     }
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 10px;
     }
 
     .proxy-card {
-      position: relative;
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 145px 210px;
+      gap: 14px;
+      align-items: center;
+      min-height: 104px;
       padding: 16px;
-      min-height: 178px;
       border-radius: 24px;
       background: var(--card);
-      border: 1px solid rgba(148,163,184,.18);
+      border: 1px solid rgba(148,163,184,.16);
+      position: relative;
+      overflow: hidden;
       transition: transform .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease, filter .2s ease;
     }
-    .proxy-card:hover { transform: translateY(-3px); background: var(--card-hover); border-color: rgba(56,189,248,.35); }
-    .proxy-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      opacity: .85;
-      pointer-events: none;
-      background: radial-gradient(circle at 18% 0%, rgba(56,189,248,.14), transparent 34%);
-    }
-    .proxy-card.is-new { animation: cardNew 1.2s ease both; border-color: rgba(52,211,153,.65); }
-    .proxy-card.is-updated { animation: cardUpdated 1.2s ease both; border-color: rgba(250,204,21,.72); }
-    .proxy-card.used { filter: grayscale(.8); opacity: .58; }
-    .proxy-card.stale { border-color: rgba(251,113,133,.42); }
+
+    .proxy-card:hover { transform: translateY(-2px); background: var(--card2); border-color: rgba(56,189,248,.32); }
+    .proxy-card.used { opacity: .52; filter: grayscale(.72); }
+    .proxy-card.is-new { animation: cardNew 1.15s ease both; border-color: rgba(52,211,153,.72); }
+    .proxy-card.is-updated { animation: cardUpdated 1.15s ease both; border-color: rgba(250,204,21,.72); }
 
     @keyframes cardNew {
-      0% { transform: scale(.96); box-shadow: 0 0 0 rgba(52,211,153,0); }
-      45% { transform: scale(1.015); box-shadow: 0 0 44px rgba(52,211,153,.23); }
+      0% { transform: scale(.97); box-shadow: 0 0 0 rgba(52,211,153,0); }
+      45% { transform: scale(1.012); box-shadow: 0 0 42px rgba(52,211,153,.22); }
       100% { transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); }
     }
+
     @keyframes cardUpdated {
       0% { transform: translateY(8px); box-shadow: 0 0 0 rgba(250,204,21,0); }
-      45% { transform: translateY(-3px); box-shadow: 0 0 44px rgba(250,204,21,.20); }
+      45% { transform: translateY(-2px); box-shadow: 0 0 42px rgba(250,204,21,.18); }
       100% { transform: translateY(0); box-shadow: 0 0 0 rgba(250,204,21,0); }
     }
 
-    .card-top {
+    .server {
+      min-width: 0;
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      position: relative;
-      z-index: 1;
+      align-items: center;
+      gap: 13px;
     }
-    .server-main { min-width: 0; }
-    .server-line { display: flex; gap: 10px; align-items: center; min-width: 0; }
-    .flag { font-size: 2rem; line-height: 1; filter: drop-shadow(0 8px 18px rgba(0,0,0,.28)); }
+
+    .flag { font-size: 2.25rem; line-height: 1; filter: drop-shadow(0 8px 18px rgba(0,0,0,.30)); }
     .host {
-      font-size: 1rem;
-      font-weight: 800;
-      line-height: 1.25;
+      font-size: 1.05rem;
+      font-weight: 900;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 330px;
     }
-    .port { color: var(--muted); font-weight: 700; font-size: .85rem; margin-top: 3px; }
+    .sub {
+      color: var(--muted);
+      font-size: .84rem;
+      margin-top: 4px;
+      font-weight: 700;
+    }
 
-    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; position: relative; z-index: 1; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border-radius: 999px;
-      padding: 6px 9px;
-      font-size: .72rem;
-      font-weight: 800;
-      border: 1px solid rgba(148,163,184,.16);
-      background: rgba(148,163,184,.10);
-      color: #cbd5e1;
+    .ping {
+      text-align: right;
     }
-    .badge.good { color: #bbf7d0; background: rgba(34,197,94,.13); border-color: rgba(34,197,94,.20); }
-    .badge.mid { color: #fef08a; background: rgba(234,179,8,.12); border-color: rgba(234,179,8,.24); }
-    .badge.bad { color: #fecdd3; background: rgba(244,63,94,.12); border-color: rgba(244,63,94,.24); }
-    .badge.blue { color: #bae6fd; background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
-    .badge.violet { color: #ddd6fe; background: rgba(167,139,250,.11); border-color: rgba(167,139,250,.22); }
-    .badge.new { color: #bbf7d0; background: rgba(16,185,129,.16); border-color: rgba(16,185,129,.28); }
-    .badge.updated { color: #fef3c7; background: rgba(245,158,11,.16); border-color: rgba(245,158,11,.28); }
+    .ping-value {
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -.06em;
+    }
+    .ping.good .ping-value { color: #86efac; }
+    .ping.mid .ping-value { color: #fde68a; }
+    .ping.bad .ping-value { color: #fecdd3; }
+    .ping-label {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
 
     .actions {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       gap: 8px;
       align-items: center;
-      margin-top: 18px;
-      position: relative;
-      z-index: 1;
     }
-    .actions .btn { flex: 1; padding: 11px 12px; }
 
-    .provider-panel {
-      margin-top: 14px;
-      border-radius: 24px;
-      padding: 16px;
-      background: rgba(15,23,42,.56);
-      border: 1px solid var(--line);
-    }
-    .provider-title { font-weight: 800; margin-bottom: 10px; }
-    .providers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .provider {
-      padding: 11px;
-      border-radius: 16px;
-      background: rgba(2,6,23,.38);
-      border: 1px solid rgba(148,163,184,.14);
-      min-width: 0;
-    }
-    .provider-name { font-weight: 800; font-size: .8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .provider-meta { color: var(--muted); font-size: .74rem; margin-top: 5px; }
-
-    .toast-stack { position: fixed; right: 18px; top: 18px; z-index: 9999; display: grid; gap: 10px; width: min(380px, calc(100% - 36px)); }
-    .toast {
-      display: flex;
-      justify-content: space-between;
+    .check {
+      display: inline-flex;
+      justify-content: center;
       align-items: center;
-      gap: 12px;
-      padding: 14px 15px;
-      border-radius: 18px;
-      background: rgba(15, 23, 42, .94);
-      border: 1px solid rgba(52,211,153,.28);
-      box-shadow: 0 18px 50px rgba(0,0,0,.35);
-      transform: translateX(115%);
-      opacity: 0;
-      transition: .34s ease;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: .75rem;
+      font-weight: 900;
+      color: #bbf7d0;
+      background: rgba(52,211,153,.10);
+      border: 1px solid rgba(52,211,153,.22);
     }
-    .toast.show { transform: translateX(0); opacity: 1; }
-    .toast strong { display: block; font-size: .92rem; }
-    .toast span { color: var(--muted); font-size: .78rem; display: block; margin-top: 2px; }
-    .toast button { color: #cbd5e1; background: transparent; border: 0; cursor: pointer; font-size: 1.1rem; }
 
-    .empty {
-      padding: 42px 18px;
+    .empty, .loader {
+      padding: 40px 18px;
       text-align: center;
       color: var(--muted);
-      border-radius: 24px;
-      border: 1px dashed rgba(148,163,184,.24);
-      background: rgba(2,6,23,.26);
+      border-radius: 22px;
+      background: rgba(2,6,23,.24);
+      border: 1px dashed rgba(148,163,184,.22);
     }
-    .loader { padding: 42px; text-align: center; color: var(--muted); }
+
     .spinner {
       width: 30px;
       height: 30px;
@@ -407,24 +329,51 @@
       animation: spin .85s linear infinite;
     }
 
-    @media (max-width: 920px) {
-      .hero { grid-template-columns: 1fr; }
-      .cards { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: 1fr; }
-      .providers { grid-template-columns: repeat(2, 1fr); }
-      .toolbar { align-items: stretch; flex-direction: column; }
-      .toolbar-left { width: 100%; }
-      .search, .select { width: 100%; }
-      .toolbar .btn { width: 100%; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast-stack {
+      position: fixed;
+      right: 18px;
+      top: 18px;
+      z-index: 9999;
+      display: grid;
+      gap: 10px;
+      width: min(360px, calc(100% - 36px));
     }
-    @media (max-width: 560px) {
-      .page { width: min(100% - 20px, 1180px); padding-top: 14px; }
-      .hero-main, .side-panel { padding: 18px; border-radius: 22px; }
-      .board { padding: 10px; border-radius: 22px; }
+    .toast {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 15px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, .96);
+      border: 1px solid rgba(52,211,153,.28);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      transform: translateX(115%);
+      opacity: 0;
+      transition: .34s ease;
+    }
+    .toast.show { transform: translateX(0); opacity: 1; }
+    .toast strong { display: block; font-size: .92rem; }
+    .toast span { color: var(--muted); font-size: .78rem; display: block; margin-top: 3px; }
+    .toast button { color: #cbd5e1; background: transparent; border: 0; cursor: pointer; font-size: 1.1rem; }
+
+    @media (max-width: 820px) {
+      .top { grid-template-columns: 1fr; }
+      .proxy-card { grid-template-columns: 1fr; align-items: stretch; }
+      .ping { text-align: left; }
+      .actions { grid-template-columns: 1fr auto; }
+      .bar { align-items: flex-start; flex-direction: column; }
+      .bar .btn { width: 100%; }
+    }
+
+    @media (max-width: 520px) {
+      .page { width: min(100% - 18px, 980px); padding-top: 14px; }
+      .hero, .status, .board { border-radius: 22px; }
+      .hero, .status { padding: 18px; }
       .proxy-card { border-radius: 20px; }
-      .providers { grid-template-columns: 1fr; }
-      .version-row { align-items: flex-start; flex-direction: column; }
-      .actions { flex-direction: column; }
+      .actions { grid-template-columns: 1fr; }
       .actions .btn { width: 100%; }
     }
   </style>
@@ -432,25 +381,26 @@
 <body>
   <div class="toast-stack" id="toastStack"></div>
   <main class="page" id="app">
-    <div class="loader"><div class="spinner"></div>Загружаю табло прокси…</div>
+    <div class="loader"><div class="spinner"></div>Загружаю рабочие прокси…</div>
   </main>
 
   <script>
     const CONFIG = {
       PROXIES_URL: './proxies.json',
-      AUTO_REFRESH_MS: 3 * 60 * 1000,
-      SNAPSHOT_KEY: 'mtproto_proxy_snapshot_v5',
-      USED_KEY: 'mtproto_proxy_used_v5',
-      NOTIFY_KEY: 'mtproto_proxy_notifications_v5'
+      AUTO_REFRESH_MS: 10 * 1000,
+      SNAPSHOT_KEY: 'mtproto_proxy_snapshot_strict_v1',
+      USED_KEY: 'mtproto_proxy_used_strict_v1',
+      NOTIFY_KEY: 'mtproto_proxy_notifications_strict_v1'
     };
 
     const state = {
       data: null,
       proxies: [],
-      query: '',
-      filter: 'all',
       loading: false,
       autoTimer: null,
+      tickTimer: null,
+      lastUiRefreshAt: null,
+      nextUiRefreshAt: null,
       hasSnapshot: false
     };
 
@@ -476,39 +426,23 @@
       writeJson(CONFIG.USED_KEY, [...used]);
     };
 
-    const formatRelative = dateLike => {
-      if (!dateLike) return '—';
-      const date = new Date(dateLike);
-      if (Number.isNaN(date.getTime())) return '—';
-      const diff = Date.now() - date.getTime();
-      const min = Math.max(0, Math.floor(diff / 60000));
-      const h = Math.floor(min / 60);
-      const d = Math.floor(h / 24);
-      if (min < 1) return 'только что';
-      if (min < 60) return `${min} мин назад`;
-      if (h < 24) return `${h} ч назад`;
-      if (d < 7) return `${d} дн назад`;
-      return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    };
-
     const formatFull = dateLike => {
       if (!dateLike) return '—';
       const date = new Date(dateLike);
       if (Number.isNaN(date.getTime())) return '—';
-      return date.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'medium' });
+      return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
 
-    const pingBadgeClass = ping => {
+    const secondsLeft = () => {
+      if (!state.nextUiRefreshAt) return 10;
+      return Math.max(0, Math.ceil((state.nextUiRefreshAt - Date.now()) / 1000));
+    };
+
+    const pingClass = ping => {
       if (typeof ping !== 'number') return 'bad';
       if (ping < 200) return 'good';
       if (ping < 500) return 'mid';
       return 'bad';
-    };
-
-    const pingLabel = proxy => {
-      if (!proxy.online) return 'offline';
-      if (typeof proxy.pingMs !== 'number') return 'нет замера';
-      return `${proxy.pingMs} ms`;
     };
 
     const getSnapshot = () => readJson(CONFIG.SNAPSHOT_KEY, {});
@@ -519,7 +453,7 @@
           fingerprint: p.fingerprint || `${p.server}:${p.port}:${p.secret}`,
           updatedAt: p.updatedAt || null,
           checkedAt: p.checkedAt || null,
-          online: p.online !== false
+          pingMs: p.pingMs ?? null
         };
       });
       writeJson(CONFIG.SNAPSHOT_KEY, snap);
@@ -534,7 +468,7 @@
         if (!old) uiEvent = 'new';
         else if (old.fingerprint !== (proxy.fingerprint || `${proxy.server}:${proxy.port}:${proxy.secret}`)) uiEvent = 'updated';
         else if (old.updatedAt && proxy.updatedAt && old.updatedAt !== proxy.updatedAt && proxy.changeType && proxy.changeType !== 'same') uiEvent = proxy.changeType;
-        else if (old.online === false && proxy.online === true) uiEvent = 'recovered';
+        else if (typeof old.pingMs === 'number' && typeof proxy.pingMs === 'number' && Math.abs(old.pingMs - proxy.pingMs) >= 80) uiEvent = 'latency_changed';
         return { ...proxy, uiEvent, used: getUsed().has(proxy.id) };
       });
     };
@@ -547,26 +481,21 @@
       item.querySelector('button').addEventListener('click', () => item.remove());
       root.appendChild(item);
       requestAnimationFrame(() => item.classList.add('show'));
-      setTimeout(() => item.remove(), 8500);
+      setTimeout(() => item.remove(), 7500);
 
       if (system && localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled' && 'Notification' in window && Notification.permission === 'granted') {
-        try { new Notification(title, { body: text || 'MTProto Proxy Radar' }); } catch (_) {}
+        try { new Notification(title, { body: text || 'Telegram Proxy' }); } catch (_) {}
       }
     };
 
     const requestNotifications = async () => {
       if (!('Notification' in window)) {
-        notify('Браузерные уведомления недоступны', 'Но всплывающие уведомления внутри страницы будут работать.', false);
+        notify('Браузерные уведомления недоступны', 'Внутренние уведомления на странице останутся.', false);
         return;
       }
       const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        localStorage.setItem(CONFIG.NOTIFY_KEY, 'enabled');
-        notify('Уведомления включены', 'Теперь новые и обновлённые серверы будут заметнее.', false);
-      } else {
-        localStorage.setItem(CONFIG.NOTIFY_KEY, 'disabled');
-        notify('Уведомления не включены', 'Можно продолжать пользоваться табло без них.', false);
-      }
+      localStorage.setItem(CONFIG.NOTIFY_KEY, permission === 'granted' ? 'enabled' : 'disabled');
+      notify(permission === 'granted' ? 'Уведомления включены' : 'Уведомления не включены', permission === 'granted' ? 'Новые и обновлённые прокси будут заметнее.' : 'Табло всё равно будет работать.', false);
       render();
     };
 
@@ -589,23 +518,21 @@
         await navigator.clipboard.writeText(link);
         notify('Ссылка скопирована', `${proxy.server}:${proxy.port}`, false);
       } catch (_) {
-        notify('Не удалось скопировать автоматически', 'Скопируй ссылку из адреса кнопки Telegram.', false);
+        notify('Не удалось скопировать', 'Открой через кнопку подключения.', false);
       }
     };
 
-    window.setFilter = value => { state.filter = value; render(); };
-    window.setQuery = value => { state.query = value.trim().toLowerCase(); render(); };
     window.resetUsed = () => {
       localStorage.removeItem(CONFIG.USED_KEY);
       state.proxies = state.proxies.map(p => ({ ...p, used: false }));
-      notify('Использованные сброшены', 'Все карточки снова активны для этого браузера.', false);
+      notify('Использованные сброшены', 'Карточки снова яркие только в этом браузере.', false);
       render();
     };
 
     const loadProxies = async (manual = false) => {
       if (state.loading) return;
       state.loading = true;
-      render();
+      if (manual) render();
 
       try {
         const controller = new AbortController();
@@ -616,184 +543,113 @@
         const data = await response.json();
         const rawProxies = Array.isArray(data.proxies) ? data.proxies : [];
         const withEvents = detectUiEvents(rawProxies)
-          .filter(p => p.server && p.port && p.secret)
+          .filter(p => p.server && p.port && p.secret && p.online === true && p.checkPassed === true && Number(p.strictPassed) === Number(p.strictRequired || 10))
           .sort((a, b) => {
             if (a.used !== b.used) return a.used ? 1 : -1;
-            if ((a.online !== false) !== (b.online !== false)) return a.online === false ? 1 : -1;
             return (a.pingMs ?? 999999) - (b.pingMs ?? 999999);
           });
 
-        const changed = withEvents.filter(p => p.uiEvent && ['new', 'updated', 'recovered', 'latency_changed'].includes(p.uiEvent));
+        const changed = withEvents.filter(p => p.uiEvent && ['new', 'updated', 'latency_changed'].includes(p.uiEvent));
         if ((state.hasSnapshot || manual) && changed.length) {
           const newCount = changed.filter(p => p.uiEvent === 'new').length;
-          const updatedCount = changed.length - newCount;
-          notify('Табло обновилось', `${newCount ? `новых: ${newCount}` : ''}${newCount && updatedCount ? ', ' : ''}${updatedCount ? `изменений: ${updatedCount}` : ''}`.trim());
+          const changedCount = changed.length - newCount;
+          notify('Табло обновилось', `${newCount ? `новых: ${newCount}` : ''}${newCount && changedCount ? ', ' : ''}${changedCount ? `изменений: ${changedCount}` : ''}`.trim());
         }
 
         state.data = data;
         state.proxies = withEvents;
+        state.lastUiRefreshAt = Date.now();
+        state.nextUiRefreshAt = Date.now() + CONFIG.AUTO_REFRESH_MS;
         saveSnapshot(withEvents);
       } catch (error) {
         console.error(error);
-        notify('Не удалось загрузить proxies.json', 'Проверь GitHub Pages, путь к файлу или последний Actions run.', false);
+        notify('Не удалось загрузить список', 'Проверь proxies.json или последний запуск Actions.', false);
       } finally {
         state.loading = false;
         render();
       }
     };
 
-    const filteredProxies = () => {
-      return state.proxies.filter(proxy => {
-        const q = state.query;
-        const matchesQuery = !q || `${proxy.server} ${proxy.port} ${proxy.provider || ''}`.toLowerCase().includes(q);
-        const matchesFilter =
-          state.filter === 'all' ||
-          (state.filter === 'fresh' && !proxy.used) ||
-          (state.filter === 'used' && proxy.used) ||
-          (state.filter === 'new' && proxy.uiEvent) ||
-          (state.filter === 'fast' && proxy.online !== false && typeof proxy.pingMs === 'number' && proxy.pingMs < 200);
-        return matchesQuery && matchesFilter;
-      });
-    };
-
-    const eventBadge = proxy => {
-      if (proxy.uiEvent === 'new') return '<span class="badge new">✨ новый</span>';
-      if (proxy.uiEvent === 'updated') return '<span class="badge updated">⚡ обновлён</span>';
-      if (proxy.uiEvent === 'recovered') return '<span class="badge new">🟢 снова живой</span>';
-      if (proxy.uiEvent === 'latency_changed') return '<span class="badge updated">📈 пинг изменился</span>';
-      if (proxy.changeType === 'stale' || proxy.stale) return '<span class="badge bad">⚠️ старый список</span>';
-      return '';
-    };
-
     const proxyCard = proxy => {
-      const cardClasses = [
+      const classes = [
         'proxy-card',
         proxy.used ? 'used' : '',
-        proxy.stale ? 'stale' : '',
-        proxy.uiEvent === 'new' || proxy.uiEvent === 'recovered' ? 'is-new' : '',
+        proxy.uiEvent === 'new' ? 'is-new' : '',
         ['updated', 'latency_changed'].includes(proxy.uiEvent) ? 'is-updated' : ''
       ].filter(Boolean).join(' ');
-
-      const pingClass = proxy.online === false ? 'bad' : pingBadgeClass(proxy.pingMs);
-      const connectText = proxy.used ? 'Ещё раз подключить' : 'Подключить';
+      const ping = typeof proxy.pingMs === 'number' ? proxy.pingMs : null;
+      const strict = `${proxy.strictPassed || 10}/${proxy.strictRequired || 10}`;
+      const eventLabel = proxy.uiEvent === 'new' ? ' · новый' : ['updated', 'latency_changed'].includes(proxy.uiEvent) ? ' · обновлён' : '';
 
       return `
-        <article class="${cardClasses}" data-id="${escapeHtml(proxy.id)}">
-          <div class="card-top">
-            <div class="server-main">
-              <div class="server-line">
-                <div class="flag">${escapeHtml(proxy.flag || '🌐')}</div>
-                <div style="min-width:0">
-                  <div class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</div>
-                  <div class="port">порт ${escapeHtml(proxy.port)} · ${escapeHtml(proxy.type || 'MTProto')}</div>
-                </div>
-              </div>
+        <article class="${classes}" data-id="${escapeHtml(proxy.id)}">
+          <div class="server">
+            <div class="flag">${escapeHtml(proxy.flag || '🌐')}</div>
+            <div style="min-width:0">
+              <div class="host" title="${escapeHtml(proxy.server)}">${escapeHtml(proxy.server)}</div>
+              <div class="sub">порт ${escapeHtml(proxy.port)}${proxy.used ? ' · использован у тебя' : eventLabel}</div>
             </div>
-            ${proxy.used ? '<span class="badge">✓ использован</span>' : '<span class="badge good">готов</span>'}
           </div>
-
-          <div class="badges">
-            <span class="badge ${pingClass}">📡 ${escapeHtml(pingLabel(proxy))}</span>
-            <span class="badge blue">🧪 TCP-connect</span>
-            <span class="badge violet">🕐 ${escapeHtml(formatRelative(proxy.checkedAt || proxy.fetchedAt))}</span>
-            <span class="badge">📦 ${escapeHtml(proxy.provider || 'provider')}</span>
-            ${eventBadge(proxy)}
+          <div class="ping ${pingClass(ping)}">
+            <div class="ping-value">${ping === null ? '—' : `${ping} ms`}</div>
+            <div class="ping-label">пинг</div>
           </div>
-
           <div class="actions">
-            <button class="btn ${proxy.used ? 'used' : 'green'}" type="button" onclick='connectProxy(${JSON.stringify(proxy.id)})'>${connectText}</button>
-            <button class="btn secondary" type="button" onclick='copyProxy(${JSON.stringify(proxy.id)})'>Копия</button>
+            <button class="btn ${proxy.used ? 'used' : ''}" type="button" onclick='connectProxy(${JSON.stringify(proxy.id)})'>${proxy.used ? 'Ещё раз' : 'Подключить'}</button>
+            <button class="btn secondary" type="button" onclick='copyProxy(${JSON.stringify(proxy.id)})'>⧉</button>
+            <div class="check" title="Сервер попал на сайт только после всех проверок подряд">✓ ${strict}</div>
           </div>
         </article>`;
-    };
-
-    const providerCards = () => {
-      const providers = state.data?.providers || [];
-      if (!providers.length) return '';
-      return `
-        <section class="provider-panel">
-          <div class="provider-title">Проверка поставщиков</div>
-          <div class="providers">
-            ${providers.map(p => `
-              <div class="provider">
-                <div class="provider-name">${p.ok ? '🟢' : '🔴'} ${escapeHtml(p.name)}</div>
-                <div class="provider-meta">найдено: ${escapeHtml(p.parsed ?? 0)}${p.error ? ` · ${escapeHtml(p.error)}` : ''}</div>
-              </div>`).join('')}
-          </div>
-        </section>`;
     };
 
     const render = () => {
       const app = document.getElementById('app');
       const data = state.data;
-      const proxies = filteredProxies();
+      const count = state.proxies.length;
       const freshCount = state.proxies.filter(p => !p.used).length;
-      const usedCount = state.proxies.filter(p => p.used).length;
-      const fast = state.proxies.filter(p => p.online !== false && typeof p.pingMs === 'number' && p.pingMs < 200).length;
-      const bestPing = state.proxies.filter(p => p.online !== false && typeof p.pingMs === 'number').sort((a, b) => a.pingMs - b.pingMs)[0];
-      const statusValue = data ? (data.success ? 'Online' : data.stale ? 'Stale' : 'Offline') : 'Loading';
-      const statusCaption = data
-        ? data.success
-          ? `Последняя проверка: ${formatFull(data.timestamp)}`
-          : (data.error || 'Нет свежих рабочих серверов')
-        : 'Загружаю список серверов';
-      const nextUpdate = data?.next_update ? formatFull(data.next_update) : '—';
+      const bestPing = state.proxies.filter(p => typeof p.pingMs === 'number').sort((a, b) => a.pingMs - b.pingMs)[0];
       const notifyEnabled = localStorage.getItem(CONFIG.NOTIFY_KEY) === 'enabled';
+      const statusTitle = data ? (count ? 'Готово' : 'Нет рабочих') : 'Загрузка';
+      const statusNote = data
+        ? count
+          ? `Показаны только прокси, прошедшие строгую проверку ${data.check?.strict_required || 10}/10.`
+          : (data.error || 'Actions не нашёл железно рабочие прокси.')
+        : 'Читаю proxies.json';
 
       app.innerHTML = `
-        <section class="hero">
-          <div class="hero-main glass">
-            <div class="version-row">
-              <span class="eyebrow">⚡ MTProto Proxy Radar · v5</span>
-              <span class="eyebrow">${data?.schedule?.timezone ? escapeHtml(data.schedule.timezone) : 'GitHub Actions'}</span>
-            </div>
-            <h1>Живые прокси для Telegram без гадания</h1>
-            <p class="lead">Поставщики проверяются GitHub Actions, серверы проходят TCP-проверку, а у каждого пользователя свой список “использованных”: перешёл по ссылке — карточка тухнет только у него.</p>
-            <div class="hero-actions">
-              <button class="btn green" type="button" onclick="loadProxies(true)" ${state.loading ? 'disabled' : ''}>${state.loading ? '<span class="spin">↻</span> Обновляю' : '↻ Обновить табло'}</button>
-              <button class="btn secondary" type="button" onclick="requestNotifications()">${notifyEnabled ? '🔔 Уведомления включены' : '🔔 Включить уведомления'}</button>
-            </div>
+        <section class="top">
+          <div class="hero glass">
+            <span class="badge">🟢 Только рабочие MTProto</span>
+            <h1>Telegram Proxy</h1>
+            <p class="lead">Минимальное табло для менеджеров: пинг, статус проверки и кнопка подключения. Лишняя техническая информация скрыта.</p>
           </div>
-
-          <aside class="side-panel glass">
-            <div class="big-status">
-              <div class="status-title">Состояние табло</div>
-              <div class="status-value">${escapeHtml(statusValue)}</div>
-              <div class="status-caption">${escapeHtml(statusCaption)}</div>
+          <aside class="status glass">
+            <div>
+              <div class="status-label">Статус</div>
+              <div class="status-value">${escapeHtml(statusTitle)}</div>
+              <div class="status-note">${escapeHtml(statusNote)}</div>
             </div>
-            <div class="metric">
-              <div class="metric-label">Следующее обновление</div>
-              <div class="metric-value" style="font-size:1.18rem">${escapeHtml(nextUpdate)}</div>
-              <div class="metric-note">После 22:00 автообновление спит до 08:30.</div>
-            </div>
+            <div class="status-note">Лучший пинг: <b>${bestPing ? `${bestPing.pingMs} ms` : '—'}</b><br>Следующая проверка: ${escapeHtml(formatFull(data?.next_update))}</div>
           </aside>
         </section>
 
-        <section class="metrics">
-          <div class="metric"><div class="metric-label">Рабочих серверов</div><div class="metric-value">${state.proxies.length}</div><div class="metric-note">выводятся только прошедшие проверку</div></div>
-          <div class="metric"><div class="metric-label">Свежих у тебя</div><div class="metric-value">${freshCount}</div><div class="metric-note">использовано: ${usedCount}</div></div>
-          <div class="metric"><div class="metric-label">Лучший пинг</div><div class="metric-value">${bestPing ? `${bestPing.pingMs} ms` : '—'}</div><div class="metric-note">быстрых до 200 ms: ${fast}</div></div>
+        <section class="bar">
+          <div class="bar-left">
+            <span class="badge">Рабочих: ${count}</span>
+            <span class="badge">Не использовано: ${freshCount}</span>
+            <span class="mini">Пинг перечитывается каждые ${secondsLeft()} сек.</span>
+          </div>
+          <div class="bar-left">
+            <button class="btn secondary" type="button" onclick="requestNotifications()">${notifyEnabled ? '🔔 Вкл.' : '🔔 Уведомления'}</button>
+            <button class="btn secondary" type="button" onclick="resetUsed()">Сброс</button>
+            <button class="btn" type="button" onclick="loadProxies(true)" ${state.loading ? 'disabled' : ''}>${state.loading ? '<span class="spin">↻</span>' : '↻'} Обновить</button>
+          </div>
         </section>
 
         <section class="board">
-          <div class="toolbar">
-            <div class="toolbar-left">
-              <input class="search" type="search" placeholder="Поиск по серверу или поставщику" value="${escapeHtml(state.query)}" oninput="setQuery(this.value)" />
-              <select class="select" onchange="setFilter(this.value)">
-                <option value="all" ${state.filter === 'all' ? 'selected' : ''}>Все</option>
-                <option value="fresh" ${state.filter === 'fresh' ? 'selected' : ''}>Не использованные</option>
-                <option value="used" ${state.filter === 'used' ? 'selected' : ''}>Использованные</option>
-                <option value="new" ${state.filter === 'new' ? 'selected' : ''}>Новые/обновлённые</option>
-                <option value="fast" ${state.filter === 'fast' ? 'selected' : ''}>Пинг до 200 ms</option>
-              </select>
-            </div>
-            <button class="btn secondary" type="button" onclick="resetUsed()">Сбросить использованные</button>
-          </div>
-
           ${state.loading && !state.proxies.length ? '<div class="loader"><div class="spinner"></div>Загружаю список…</div>' : ''}
-          ${!state.loading && !proxies.length ? '<div class="empty">Подходящих карточек нет. Попробуй сбросить фильтр или обновить табло.</div>' : ''}
-          <div class="cards">${proxies.map(proxyCard).join('')}</div>
-          ${providerCards()}
+          ${!state.loading && !state.proxies.length ? '<div class="empty">Сейчас нет прокси, которые прошли 10 проверок подряд. Лучше показать пусто, чем дать менеджеру мёртвый сервер.</div>' : ''}
+          <div class="cards">${state.proxies.map(proxyCard).join('')}</div>
         </section>
       `;
     };
@@ -805,6 +661,8 @@
       loadProxies(false);
       clearInterval(state.autoTimer);
       state.autoTimer = setInterval(() => loadProxies(false), CONFIG.AUTO_REFRESH_MS);
+      clearInterval(state.tickTimer);
+      state.tickTimer = setInterval(render, 1000);
     });
   </script>
 </body>

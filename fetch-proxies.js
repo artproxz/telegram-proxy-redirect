@@ -3,13 +3,14 @@ const fs = require('fs');
 const net = require('net');
 
 const OUTPUT_FILE = 'proxies.json';
-const MAX_CANDIDATES = Number(process.env.MAX_CANDIDATES || 80);
-const MAX_PROXIES = Number(process.env.MAX_PROXIES || 24);
-const TCP_TIMEOUT_MS = Number(process.env.TCP_TIMEOUT_MS || 3500);
-const CHECK_CONCURRENCY = Number(process.env.CHECK_CONCURRENCY || 16);
+const MAX_CANDIDATES = Number(process.env.MAX_CANDIDATES || 100);
+const MAX_PROXIES = Number(process.env.MAX_PROXIES || 12);
+const TCP_TIMEOUT_MS = Number(process.env.TCP_TIMEOUT_MS || 3000);
+const CHECK_CONCURRENCY = Number(process.env.CHECK_CONCURRENCY || 10);
+const STRICT_CHECKS = Number(process.env.STRICT_CHECKS || 10);
+const STRICT_CHECK_PAUSE_MS = Number(process.env.STRICT_CHECK_PAUSE_MS || 180);
 
 // GitHub cron настроен под московское время UTC+3.
-// Если нужно другое время — поменяй workflow cron и эту подпись в schedule.
 const SCHEDULE_TZ = 'Europe/Moscow';
 const SCHEDULE_TZ_OFFSET_MINUTES = 180;
 const SCHEDULE_POINTS = [
@@ -41,6 +42,10 @@ const FLAG_MAP = [
   [/\.pl$/i, '🇵🇱'], [/\.by$/i, '🇧🇾'], [/^185\./, '🇳🇱'], [/^91\.107\./, '🇩🇪'],
   [/^65\.109\./, '🇫🇮'], [/^51\.15\./, '🇫🇷'], [/^149\.154\./, '🇬🇧']
 ];
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
@@ -131,7 +136,7 @@ function parseProxyLink(link, providerName, sourceTime) {
   if (!secret || secret.length < 16) return null;
 
   const proxy = {
-    id: `${server}:${port}`,
+    id: `${server}:${portNum}`,
     type: 'MTProto',
     server,
     port: String(portNum),
@@ -203,6 +208,48 @@ function tcpConnectPing(server, port, timeoutMs = TCP_TIMEOUT_MS) {
   });
 }
 
+async function strictCheckProxy(proxy) {
+  const samples = [];
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= STRICT_CHECKS; attempt += 1) {
+    const result = await tcpConnectPing(proxy.server, proxy.port);
+    if (!result.online) {
+      lastError = result.error || `failed on attempt ${attempt}`;
+      return {
+        ...proxy,
+        online: false,
+        pingMs: null,
+        checkPassed: false,
+        strictPassed: attempt - 1,
+        strictRequired: STRICT_CHECKS,
+        checkSamplesMs: samples,
+        error: lastError
+      };
+    }
+    samples.push(result.pingMs);
+    if (attempt < STRICT_CHECKS) await sleep(STRICT_CHECK_PAUSE_MS);
+  }
+
+  const sorted = [...samples].sort((a, b) => a - b);
+  const avg = Math.round(samples.reduce((sum, value) => sum + value, 0) / samples.length);
+  const median = sorted[Math.floor(sorted.length / 2)];
+
+  return {
+    ...proxy,
+    online: true,
+    pingMs: median,
+    pingAvgMs: avg,
+    pingBestMs: sorted[0],
+    pingWorstMs: sorted[sorted.length - 1],
+    checkPassed: true,
+    strictPassed: STRICT_CHECKS,
+    strictRequired: STRICT_CHECKS,
+    checkSamplesMs: samples,
+    error: null
+  };
+}
+
 async function mapLimit(items, limit, mapper) {
   const result = new Array(items.length);
   let index = 0;
@@ -253,19 +300,15 @@ function mergeMetadata(current, previous, nowIso) {
 
     if (old) {
       firstSeenAt = old.firstSeenAt || old.fetchedAt || nowIso;
-      updatedAt = old.updatedAt || old.fetchedAt || firstSeenAt;
+      updatedAt = old.updatedAt || old.checkedAt || firstSeenAt;
       changeType = 'same';
 
       if ((old.fingerprint && old.fingerprint !== proxy.fingerprint) || old.secret !== proxy.secret || old.raw !== proxy.raw) {
         changeType = 'updated';
         updatedAt = nowIso;
-      } else if (old.online === false && proxy.online === true) {
-        changeType = 'recovered';
-        updatedAt = nowIso;
       } else if (typeof old.pingMs === 'number' && typeof proxy.pingMs === 'number') {
-        const oldBucket = old.pingMs < 200 ? 'fast' : old.pingMs < 500 ? 'mid' : 'slow';
-        const newBucket = proxy.pingMs < 200 ? 'fast' : proxy.pingMs < 500 ? 'mid' : 'slow';
-        if (oldBucket !== newBucket) {
+        const delta = Math.abs(old.pingMs - proxy.pingMs);
+        if (delta >= 80) {
           changeType = 'latency_changed';
           updatedAt = nowIso;
         }
@@ -290,7 +333,7 @@ async function main() {
   const providerReports = [];
   const parsed = [];
 
-  console.log(`🔎 Start provider check: ${nowIso}`);
+  console.log(`🔎 Start strict provider check: ${nowIso}`);
   for (const provider of PROVIDERS) {
     const report = { name: provider.name, url: provider.url, ok: false, parsed: 0, error: null };
     try {
@@ -299,7 +342,7 @@ async function main() {
       report.ok = true;
       report.parsed = proxies.length;
       parsed.push(...proxies);
-      console.log(`✅ ${provider.name}: ${proxies.length}`);
+      console.log(`✅ ${provider.name}: parsed ${proxies.length}`);
     } catch (err) {
       report.error = String(err.message || err);
       console.log(`❌ ${provider.name}: ${report.error}`);
@@ -316,34 +359,28 @@ async function main() {
   }
 
   const candidates = unique.slice(0, MAX_CANDIDATES);
-  console.log(`📦 Parsed: ${parsed.length}; unique candidates: ${unique.length}; checking: ${candidates.length}`);
+  console.log(`📦 Parsed: ${parsed.length}; unique: ${unique.length}; strict checking: ${candidates.length}; rule: ${STRICT_CHECKS}/${STRICT_CHECKS}`);
 
   const checked = await mapLimit(candidates, CHECK_CONCURRENCY, async proxy => {
-    const result = await tcpConnectPing(proxy.server, proxy.port);
-    return { ...proxy, ...result };
+    const result = await strictCheckProxy(proxy);
+    const mark = result.checkPassed ? '✅' : '⛔';
+    console.log(`${mark} ${proxy.server}:${proxy.port} ${result.strictPassed}/${STRICT_CHECKS}${result.pingMs ? ` median=${result.pingMs}ms` : ''}`);
+    return result;
   });
 
-  let working = checked
-    .filter(p => p.online)
-    .sort((a, b) => (a.pingMs ?? 999999) - (b.pingMs ?? 999999))
-    .slice(0, MAX_PROXIES);
-
-  let success = working.length > 0;
-  let error = null;
-  let stale = false;
-
-  if (!success && previous?.proxies?.length) {
-    stale = true;
-    error = 'Новые рабочие MTProto-прокси не найдены, временно оставлен предыдущий список.';
-    working = previous.proxies.map(p => ({ ...p, stale: true, changeType: 'stale', checkedAt: nowIso }));
-    console.log('⚠️ No fresh working proxies. Previous list preserved.');
-  }
-
-  working = mergeMetadata(working, previous, nowIso);
+  const working = mergeMetadata(
+    checked
+      .filter(p => p.online === true && p.checkPassed === true && p.strictPassed === STRICT_CHECKS)
+      .sort((a, b) => (a.pingMs ?? 999999) - (b.pingMs ?? 999999))
+      .slice(0, MAX_PROXIES),
+    previous,
+    nowIso
+  );
 
   const result = {
-    success,
-    stale,
+    success: working.length > 0,
+    strict: true,
+    stale: false,
     count: working.length,
     timestamp: nowIso,
     next_update: nextScheduledUpdate(started).toISOString(),
@@ -353,35 +390,38 @@ async function main() {
       points: SCHEDULE_POINTS.map(p => p.label)
     },
     check: {
-      type: 'tcp_connect',
+      type: 'tcp_connect_strict_10x',
       timeout_ms: TCP_TIMEOUT_MS,
+      strict_required: STRICT_CHECKS,
       candidates: candidates.length,
-      online: checked.filter(p => p.online).length,
-      offline: checked.filter(p => !p.online).length
+      passed: working.length,
+      failed: checked.filter(p => !p.checkPassed).length,
+      online_after_single_attempt: checked.filter(p => p.strictPassed > 0).length,
+      note: 'На сайт попадают только прокси, прошедшие все проверки подряд.'
     },
     providers: providerReports,
     proxies: working,
-    error
+    error: working.length ? null : `Не найдено прокси, прошедших строгую проверку ${STRICT_CHECKS}/${STRICT_CHECKS}. Старые и сомнительные серверы не публикуются.`
   };
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
-  console.log(`💾 Saved ${working.length} proxies; success=${success}; next=${result.next_update}`);
+  console.log(`💾 Saved strict working proxies: ${working.length}; next=${result.next_update}`);
 }
 
 main().catch(err => {
   console.error('💥 Fatal:', err);
   const now = new Date();
-  const previous = readPrevious();
   const result = {
     success: false,
-    stale: Boolean(previous?.proxies?.length),
-    count: previous?.proxies?.length || 0,
+    strict: true,
+    stale: false,
+    count: 0,
     timestamp: now.toISOString(),
     next_update: nextScheduledUpdate(now).toISOString(),
     schedule: { timezone: SCHEDULE_TZ, points: SCHEDULE_POINTS.map(p => p.label) },
-    check: { type: 'tcp_connect', timeout_ms: TCP_TIMEOUT_MS, candidates: 0, online: 0, offline: 0 },
+    check: { type: 'tcp_connect_strict_10x', timeout_ms: TCP_TIMEOUT_MS, strict_required: STRICT_CHECKS, candidates: 0, passed: 0, failed: 0 },
     providers: [],
-    proxies: previous?.proxies || [],
+    proxies: [],
     error: String(err.message || err)
   };
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
