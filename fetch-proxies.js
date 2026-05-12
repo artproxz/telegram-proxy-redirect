@@ -176,6 +176,7 @@ function normalizeHost(host) {
     .replace(/^\[|\]$/g, '')
     .replace(/[\s`'"<>]+/g, '')
     .replace(/\/+$/g, '')
+    .replace(/\.+$/g, '')
     .toLowerCase();
 }
 
@@ -562,10 +563,21 @@ async function main() {
   }
 
   if (!finalProxies.length && previous?.proxies?.length) {
-    console.warn('⚠️ No proxies found. Keeping previous cache.');
-    finalProxies = previous.proxies.map(p => enrichProxy(p, { status: p.status || 'cached', checkedAt: nowIso(), check: p.check || 'previous-cache' }));
-    success = false;
-    note = 'Sources did not return usable proxies; previous cache is kept.';
+    const previousOnline = previous.proxies.filter(p => p.status === 'online');
+    const previousUsable = CONFIG.keepUnverifiedIfFew ? previous.proxies : previousOnline;
+
+    if (previousUsable.length) {
+      console.warn('⚠️ No fresh verified proxies found. Keeping previous usable cache.');
+      finalProxies = previousUsable.map(p => enrichProxy(p, {
+        status: p.status || 'cached',
+        checkedAt: nowIso(),
+        check: p.check || 'previous-cache'
+      }));
+      success = false;
+      note = CONFIG.keepUnverifiedIfFew
+        ? 'Sources did not return usable proxies; previous cache is kept.'
+        : 'Sources did not return fresh TCP-online proxies; previous online cache is kept.';
+    }
   }
 
   if (!finalProxies.length) {

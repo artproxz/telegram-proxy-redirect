@@ -402,7 +402,7 @@
         <div class="eyebrow">⚡ Auto-updated MTProto list</div>
         <h1>Рабочие прокси для Telegram на GitHub Pages</h1>
         <p class="lead">
-          Список обновляется через GitHub Actions, карточки берутся из <b>proxies.json</b>. Проверка выполняется по TCP‑доступности, а уведомления о новых серверах можно получать через Telegram Bot или Discord webhook.
+          Список обновляется через GitHub Actions, карточки берутся из <b>proxies.json</b>. Кнопка подключения открывает прямую <b>tg://proxy</b>-ссылку, проверка выполняется по TCP‑доступности, а уведомления о новых серверах можно получать через Telegram Bot или Discord webhook.
         </p>
         <div class="actions">
           <button class="btn-primary" id="refreshBtn">↻ Обновить список</button>
@@ -485,6 +485,43 @@
       }[char]));
     }
 
+    function buildTelegramUrl(p) {
+      if (p.raw && p.raw.startsWith('tg://proxy?')) return p.raw;
+      const params = new URLSearchParams({
+        server: p.server || '',
+        port: p.port || '',
+        secret: p.secret || ''
+      });
+      return `tg://proxy?${params.toString()}`;
+    }
+
+    function buildTelegramWebUrl(p, tgUrl) {
+      if (p.webUrl && p.webUrl.startsWith('https://t.me/proxy?')) return p.webUrl;
+      try {
+        const params = new URL(tgUrl).searchParams;
+        return `https://t.me/proxy?${params.toString()}`;
+      } catch {
+        return 'https://t.me/proxy';
+      }
+    }
+
+    function connectTelegram(tgUrl) {
+      if (!tgUrl) {
+        toast('Не удалось сформировать ссылку подключения');
+        return;
+      }
+
+      try { navigator.clipboard?.writeText(tgUrl).catch(() => {}); } catch {}
+      toast('Открываю Telegram… Если окно не появилось, ссылка уже скопирована.');
+      window.location.href = tgUrl;
+
+      window.setTimeout(() => {
+        if (document.visibilityState === 'visible') {
+          toast('Telegram не открылся? Используй кнопку «Копировать» или открой t.me-ссылку вручную.');
+        }
+      }, 1400);
+    }
+
     function getSeen() {
       try { return new Set(JSON.parse(localStorage.getItem(CONFIG.seenKey) || '[]')); }
       catch { return new Set(); }
@@ -535,8 +572,10 @@
       const status = p.status || 'unknown';
       const latency = p.latencyMs ? `${p.latencyMs} ms` : '—';
       const source = p.source || 'unknown';
-      const safeRaw = escapeHtml(p.raw || '');
-      const safeWeb = escapeHtml(p.webUrl || p.raw || '#');
+      const tgUrl = buildTelegramUrl(p);
+      const webUrl = buildTelegramWebUrl(p, tgUrl);
+      const safeRaw = escapeHtml(tgUrl);
+      const safeWeb = escapeHtml(webUrl);
 
       return `
         <article class="card" style="animation-delay:${Math.min(index * 45, 450)}ms">
@@ -559,7 +598,7 @@
           </div>
 
           <div class="card-actions">
-            <a class="btn btn-primary" href="${safeWeb}" target="_blank" rel="noopener">Подключить</a>
+            <button class="btn-primary" data-connect="${safeRaw}" data-web="${safeWeb}">Подключить в Telegram</button>
             <button class="btn-ghost" data-copy="${safeRaw}">Копировать</button>
           </div>
         </article>`;
@@ -580,6 +619,9 @@
 
       $('#content').className = 'grid';
       $('#content').innerHTML = proxies.map(cardTemplate).join('');
+      $('#content').querySelectorAll('[data-connect]').forEach(btn => {
+        btn.addEventListener('click', () => connectTelegram(btn.dataset.connect));
+      });
       $('#content').querySelectorAll('[data-copy]').forEach(btn => {
         btn.addEventListener('click', () => copyText(btn.dataset.copy));
       });
