@@ -3,14 +3,9 @@
 /**
  * Telegram MTProto proxy updater for GitHub Actions.
  *
- * What it does:
- * 1. Reads public MTProto proxy lists/channels.
- * 2. Parses tg://proxy links and "Server / Port / Secret" blocks.
- * 3. Deduplicates and checks TCP reachability only for listed public servers.
- * 4. Writes proxies.json for GitHub Pages.
- * 5. Optionally notifies you about newly added proxies via Telegram Bot or Discord webhook.
- *
- * No port scanning, no brute force, no authentication bypass.
+ * The dashboard should show only proxies that passed a fresh TCP check.
+ * Public providers are noisy, so the script ranks verified proxies by
+ * latency, freshness, port quality, repeated appearances, and previous uptime.
  */
 
 const fs = require('fs');
@@ -30,12 +25,11 @@ const DEFAULT_SOURCES = [
 const CONFIG = {
   outputFile: process.env.OUTPUT_FILE || 'proxies.json',
   timezone: process.env.TIMEZONE || 'Europe/Paris',
-  maxProxies: toInt(process.env.MAX_PROXIES, 24),
-  perSourceLimit: toInt(process.env.PER_SOURCE_LIMIT, 80),
+  maxProxies: toInt(process.env.MAX_PROXIES, 18),
+  perSourceLimit: toInt(process.env.PER_SOURCE_LIMIT, 120),
   timeoutMs: toInt(process.env.CHECK_TIMEOUT_MS, 4500),
-  checkConcurrency: toInt(process.env.CHECK_CONCURRENCY, 16),
-  keepUnverifiedIfFew: process.env.KEEP_UNVERIFIED_IF_FEW !== 'false',
-  minVerified: toInt(process.env.MIN_VERIFIED, 3),
+  checkConcurrency: toInt(process.env.CHECK_CONCURRENCY, 20),
+  candidateMultiplier: toInt(process.env.CANDIDATE_MULTIPLIER, 8),
   sourceUrls: parseSourceUrls(process.env.SOURCE_URLS),
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
@@ -61,42 +55,15 @@ function nowIso() {
 
 function nextUpdateIso() {
   const now = new Date();
-  const allowedHours = [9, 13, 17, 21];
+  const candidate = new Date(now);
+  candidate.setUTCMinutes(17, 0, 0);
 
-  for (let dayOffset = 0; dayOffset <= 2; dayOffset++) {
-    for (const hour of allowedHours) {
-      const candidate = zonedDateCandidate(CONFIG.timezone, dayOffset, hour, 17, 0);
-      if (candidate && candidate.getTime() > now.getTime() + 60_000) {
-        return candidate.toISOString();
-      }
-    }
+  while (candidate <= now || candidate.getUTCHours() % 4 !== 0) {
+    candidate.setUTCHours(candidate.getUTCHours() + 1);
+    candidate.setUTCMinutes(17, 0, 0);
   }
-  return new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString();
-}
 
-function zonedDateCandidate(timeZone, dayOffset, hour, minute, second) {
-  // Build an approximate UTC date, then adjust with Intl offset.
-  const base = new Date();
-  const utc = new Date(Date.UTC(
-    base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + dayOffset,
-    hour, minute, second
-  ));
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false
-  }).formatToParts(utc).reduce((acc, p) => {
-    if (p.type !== 'literal') acc[p.type] = p.value;
-    return acc;
-  }, {});
-
-  const asIfUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
-  const offsetMs = asIfUtc - utc.getTime();
-  return new Date(Date.UTC(
-    base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + dayOffset,
-    hour, minute, second
-  ) - offsetMs);
+  return candidate.toISOString();
 }
 
 function readPrevious(filePath) {
@@ -104,7 +71,7 @@ function readPrevious(filePath) {
     if (!fs.existsSync(filePath)) return null;
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
-    console.warn(`⚠️ Cannot read previous ${filePath}: ${error.message}`);
+    console.warn(`Cannot read previous ${filePath}: ${error.message}`);
     return null;
   }
 }
@@ -120,15 +87,15 @@ function fetchUrl(url) {
     const req = client.get(url, {
       timeout: CONFIG.timeoutMs,
       headers: {
-        'User-Agent': 'Mozilla/5.0 GitHubActionsProxyUpdater/2.0 (+https://github.com/)',
+        'User-Agent': 'Mozilla/5.0 GitHubActionsProxyUpdater/3.0 (+https://github.com/)',
         'Accept': 'text/html,text/plain,application/json;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'ru,en;q=0.8'
+        'Accept-Language': 'ru,en;q=0.8',
+        'Cache-Control': 'no-cache'
       }
     }, res => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
-        const redirected = new URL(res.headers.location, url).toString();
-        fetchUrl(redirected).then(resolve, reject);
+        fetchUrl(new URL(res.headers.location, url).toString()).then(resolve, reject);
         return;
       }
 
@@ -142,9 +109,7 @@ function fetchUrl(url) {
       res.setEncoding('utf8');
       res.on('data', chunk => {
         data += chunk;
-        if (data.length > 4_000_000) {
-          req.destroy(new Error('Response is too large'));
-        }
+        if (data.length > 5_000_000) req.destroy(new Error('Response is too large'));
       });
       res.on('end', () => resolve(data));
     });
@@ -206,13 +171,16 @@ function isValidSecret(secret) {
   return /^[A-Za-z0-9_+\-=/]+$/.test(secret);
 }
 
+function proxyHash(server, port, secret) {
+  return crypto.createHash('sha256').update(`${server}:${port}:${secret}`).digest('hex').slice(0, 16);
+}
 
 function enrichProxy(proxy, overrides = {}) {
   const server = normalizeHost(proxy.server);
   const port = String(proxy.port || '').trim().replace(/\D/g, '');
   const secret = normalizeSecret(proxy.secret);
   const params = new URLSearchParams({ server, port, secret });
-  const hash = proxy.hash || crypto.createHash('sha256').update(`${server}:${port}:${secret}`).digest('hex').slice(0, 16);
+  const hash = proxy.hash || proxyHash(server, port, secret);
   return {
     ...proxy,
     ...overrides,
@@ -220,8 +188,8 @@ function enrichProxy(proxy, overrides = {}) {
     port,
     secret,
     flag: proxy.flag || guessFlag(server),
-    raw: proxy.raw || `tg://proxy?${params.toString()}`,
-    webUrl: proxy.webUrl || `https://t.me/proxy?${params.toString()}`,
+    raw: `tg://proxy?${params.toString()}`,
+    webUrl: `https://t.me/proxy?${params.toString()}`,
     hash
   };
 }
@@ -233,47 +201,37 @@ function makeProxy(server, port, secret, source, fetchedAt) {
 
   if (!isValidHost(server) || !isValidPort(port) || !isValidSecret(secret)) return null;
 
-  const params = new URLSearchParams({ server, port, secret });
-  const raw = `tg://proxy?${params.toString()}`;
-  const webUrl = `https://t.me/proxy?${params.toString()}`;
-  const hash = crypto.createHash('sha256').update(`${server}:${port}:${secret}`).digest('hex').slice(0, 16);
-
-  return {
+  return enrichProxy({
     type: 'MTProto',
     server,
     port,
     secret,
     flag: guessFlag(server),
     source,
-    fetchedAt: fetchedAt || nowIso(),
-    raw,
-    webUrl,
-    hash
-  };
+    sources: [source],
+    fetchedAt: fetchedAt || nowIso()
+  });
 }
 
 function guessFlag(server) {
   const s = server.toLowerCase();
   const map = [
-    ['.ru', '🇷🇺'], ['.de', '🇩🇪'], ['.nl', '🇳🇱'], ['.fr', '🇫🇷'], ['.fi', '🇫🇮'],
-    ['.uk', '🇬🇧'], ['.co.uk', '🇬🇧'], ['.us', '🇺🇸'], ['.sg', '🇸🇬'], ['.ir', '🇮🇷'],
-    ['.ae', '🇦🇪'], ['.tr', '🇹🇷'], ['.pl', '🇵🇱'], ['.it', '🇮🇹'], ['.space', '🌐']
+    ['.ru', 'RU'], ['.de', 'DE'], ['.nl', 'NL'], ['.fr', 'FR'], ['.fi', 'FI'],
+    ['.uk', 'GB'], ['.co.uk', 'GB'], ['.us', 'US'], ['.sg', 'SG'], ['.ir', 'IR'],
+    ['.ae', 'AE'], ['.tr', 'TR'], ['.pl', 'PL'], ['.it', 'IT']
   ];
   for (const [needle, flag] of map) if (s.endsWith(needle)) return flag;
-  if (s.startsWith('185.')) return '🇳🇱';
-  if (s.startsWith('91.107.')) return '🇩🇪';
-  if (s.startsWith('65.109.')) return '🇫🇮';
-  if (s.startsWith('51.15.')) return '🇫🇷';
-  if (s.startsWith('149.154.')) return '🌐';
-  return '🌐';
+  if (s.startsWith('185.')) return 'NL';
+  if (s.startsWith('91.107.')) return 'DE';
+  if (s.startsWith('65.109.')) return 'FI';
+  if (s.startsWith('51.15.')) return 'FR';
+  return 'GL';
 }
 
 function sourceName(url) {
   try {
     const u = new URL(url);
-    if (u.hostname === 't.me') {
-      return `t.me/${u.pathname.split('/').filter(Boolean).slice(-1)[0] || 'channel'}`;
-    }
+    if (u.hostname === 't.me') return `t.me/${u.pathname.split('/').filter(Boolean).slice(-1)[0] || 'channel'}`;
     if (u.hostname.includes('githubusercontent.com')) {
       const parts = u.pathname.split('/').filter(Boolean);
       return `${parts[0]}/${parts[1]}`;
@@ -307,17 +265,14 @@ function parseTextForProxies(text, source, sourceUrl) {
     if (proxy) proxies.push(proxy);
   }
 
-  // Telegram public channel format usually keeps Server/Port/Secret in one message block.
   const blocks = decoded.split(/tgme_widget_message[^>]*>/i);
   for (const block of blocks) {
     const timeMatch = block.match(/<time[^>]+datetime=["']([^"']+)["']/i);
     const blockTime = timeMatch ? new Date(timeMatch[1]).toISOString() : fetchedAt;
-    const blockText = stripTags(block);
-    const proxy = parseBlock(blockText, source, blockTime);
+    const proxy = parseBlock(stripTags(block), source, blockTime);
     if (proxy) proxies.push(proxy);
   }
 
-  // Generic multiline fallback for raw pages.
   const genericBlocks = cleaned.split(/(?:\r?\n){2,}|-{3,}/g);
   for (const block of genericBlocks) {
     const proxy = parseBlock(block, source, fetchedAt);
@@ -331,12 +286,9 @@ function parseTextForProxies(text, source, sourceUrl) {
 
 function parseLine(line, source, fetchedAt) {
   const compact = line.trim();
-
-  // server:port:secret or host port secret formats.
   let m = compact.match(/^([a-z0-9.-]+|\d{1,3}(?:\.\d{1,3}){3})[:\s]+(\d{1,5})[:\s]+([A-Za-z0-9_+\-=/]{16,256})$/i);
   if (m) return makeProxy(m[1], m[2], m[3], source, fetchedAt);
 
-  // JSON-ish snippets.
   m = compact.match(/["']server["']\s*:\s*["']([^"']+)["'][\s\S]*?["']port["']\s*:\s*["']?(\d{1,5})["']?[\s\S]*?["']secret["']\s*:\s*["']([^"']+)["']/i);
   if (m) return makeProxy(m[1], m[2], m[3], source, fetchedAt);
 
@@ -372,15 +324,30 @@ function firstMatch(text, regexes) {
 }
 
 function dedupe(items) {
-  const seen = new Set();
-  const out = [];
+  const seen = new Map();
   for (const item of items) {
     const key = `${item.server}:${item.port}:${item.secret}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
+    if (!seen.has(key)) {
+      seen.set(key, { ...item, sources: item.sources || [item.source] });
+      continue;
+    }
+
+    const existing = seen.get(key);
+    const sources = new Set([...(existing.sources || []), item.source]);
+    seen.set(key, {
+      ...existing,
+      sources: [...sources],
+      source: [...sources].join(', '),
+      fetchedAt: newestIso(existing.fetchedAt, item.fetchedAt)
+    });
   }
-  return out;
+  return [...seen.values()];
+}
+
+function newestIso(a, b) {
+  const at = new Date(a).getTime() || 0;
+  const bt = new Date(b).getTime() || 0;
+  return bt > at ? b : a;
 }
 
 async function checkTcp(proxy) {
@@ -394,14 +361,13 @@ async function checkTcp(proxy) {
       if (done) return;
       done = true;
       socket.destroy();
-      resolve({
-        ...proxy,
+      resolve(enrichProxy(proxy, {
         status,
         latencyMs: status === 'online' ? Date.now() - started : null,
         checkedAt: nowIso(),
         check: 'tcp-connect',
         error
-      });
+      }));
     };
 
     socket.once('connect', () => finish('online'));
@@ -425,48 +391,79 @@ async function runPool(items, worker, concurrency) {
   return results;
 }
 
+function previousByHash(previous) {
+  const map = new Map();
+  for (const p of previous?.proxies || []) {
+    const item = enrichProxy(p);
+    map.set(item.hash, item);
+  }
+  return map;
+}
+
+function withQuality(proxy, previousMap) {
+  const previous = previousMap.get(proxy.hash);
+  const successCount = (previous?.successCount || 0) + 1;
+  const onlineStreak = previous?.status === 'online' ? (previous.onlineStreak || 0) + 1 : 1;
+  const firstSeenAt = previous?.firstSeenAt || proxy.fetchedAt || nowIso();
+  const sourceCount = new Set(proxy.sources || [proxy.source]).size;
+  const latency = proxy.latencyMs ?? CONFIG.timeoutMs;
+  const portBonus = Number(proxy.port) === 443 ? 25 : Number(proxy.port) === 8443 ? 12 : 0;
+  const sourceBonus = Math.min(sourceCount, 4) * 18;
+  const streakBonus = Math.min(onlineStreak, 8) * 10;
+  const latencyScore = Math.max(0, 260 - Math.round(latency / 4));
+  const score = latencyScore + portBonus + sourceBonus + streakBonus;
+
+  return enrichProxy(proxy, {
+    status: 'online',
+    successCount,
+    onlineStreak,
+    firstSeenAt,
+    lastOnlineAt: proxy.checkedAt,
+    sourceCount,
+    score
+  });
+}
+
 function sortProxies(a, b) {
-  if (a.status !== b.status) return a.status === 'online' ? -1 : 1;
-  const at = new Date(a.fetchedAt).getTime() || 0;
-  const bt = new Date(b.fetchedAt).getTime() || 0;
-  if (at !== bt) return bt - at;
+  if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
   return (a.latencyMs ?? 999999) - (b.latencyMs ?? 999999);
 }
 
 function previousHashes(previous) {
-  return new Set((previous?.proxies || []).map(p => p.hash || crypto.createHash('sha256').update(`${p.server}:${p.port}:${p.secret}`).digest('hex').slice(0, 16)));
+  return new Set((previous?.proxies || []).map(p => enrichProxy(p).hash));
 }
 
 async function notifyNewProxies(newItems, payload) {
   if (!newItems.length) return;
 
-  const lines = newItems.slice(0, 8).map((p, i) => `${i + 1}. ${p.server}:${p.port} — ${p.source}`);
+  const lines = newItems.slice(0, 5).map((p, i) => {
+    const latency = p.latencyMs ? `${p.latencyMs} ms` : 'n/a';
+    return `${i + 1}. ${p.server}:${p.port} | ${latency} | score ${p.score || 0}`;
+  });
   const text = [
-    `🟢 Новые MTProto прокси: ${newItems.length}`,
-    `Всего на сайте: ${payload.count}`,
+    `New verified MTProto proxies: ${newItems.length}`,
+    `Online on dashboard: ${payload.count}`,
+    `Updated: ${payload.timestamp}`,
+    `Next check: ${payload.next_update}`,
     '',
     ...lines,
-    newItems.length > 8 ? `…и ещё ${newItems.length - 8}` : '',
+    newItems.length > 5 ? `and ${newItems.length - 5} more` : '',
     '',
-    `Обновлено: ${payload.timestamp}`
+    'Dashboard shows only proxies that passed TCP connect check.'
   ].filter(Boolean).join('\n');
 
   const tasks = [];
-  if (CONFIG.telegramBotToken && CONFIG.telegramChatId) {
-    tasks.push(sendTelegram(text));
-  }
-  if (CONFIG.discordWebhookUrl) {
-    tasks.push(sendDiscord(text));
-  }
+  if (CONFIG.telegramBotToken && CONFIG.telegramChatId) tasks.push(sendTelegram(text));
+  if (CONFIG.discordWebhookUrl) tasks.push(sendDiscord(text));
 
   if (!tasks.length) {
-    console.log('ℹ️ New proxies found, but notification secrets are not configured.');
+    console.log('New verified proxies found, but notification secrets are not configured.');
     return;
   }
 
   const results = await Promise.allSettled(tasks);
   for (const result of results) {
-    if (result.status === 'rejected') console.warn(`⚠️ Notify failed: ${result.reason.message}`);
+    if (result.status === 'rejected') console.warn(`Notify failed: ${result.reason.message}`);
   }
 }
 
@@ -515,10 +512,11 @@ function sendDiscord(text) {
 
 async function main() {
   const previous = readPrevious(CONFIG.outputFile);
+  const previousMap = previousByHash(previous);
   const prevHashes = previousHashes(previous);
 
-  console.log(`🔎 Start MTProto proxy update: ${nowIso()}`);
-  console.log(`🧭 Sources: ${CONFIG.sourceUrls.length}`);
+  console.log(`Start MTProto proxy update: ${nowIso()}`);
+  console.log(`Sources: ${CONFIG.sourceUrls.length}`);
 
   const parsed = [];
   const sourceStats = [];
@@ -526,68 +524,32 @@ async function main() {
   for (const url of CONFIG.sourceUrls) {
     const name = sourceName(url);
     try {
-      console.log(`🌐 Fetch ${name}`);
+      console.log(`Fetch ${name}`);
       const body = await fetchUrl(url);
       const items = parseTextForProxies(body, name, url);
       parsed.push(...items);
       sourceStats.push({ source: name, ok: true, parsed: items.length });
     } catch (error) {
-      console.warn(`⚠️ ${name}: ${error.message}`);
+      console.warn(`${name}: ${error.message}`);
       sourceStats.push({ source: name, ok: false, parsed: 0, error: error.message });
     }
   }
 
-  const unique = dedupe(parsed).sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
-  console.log(`📦 Unique parsed: ${unique.length}`);
+  const unique = dedupe(parsed).sort((a, b) => {
+    const sourceDelta = (b.sources?.length || 1) - (a.sources?.length || 1);
+    if (sourceDelta) return sourceDelta;
+    return (new Date(b.fetchedAt).getTime() || 0) - (new Date(a.fetchedAt).getTime() || 0);
+  });
+  console.log(`Unique parsed: ${unique.length}`);
 
-  const toCheck = unique.slice(0, Math.max(CONFIG.maxProxies * 4, CONFIG.maxProxies));
-  const checked = await runPool(toCheck, checkTcp, CONFIG.checkConcurrency);
-  const online = checked.filter(p => p.status === 'online').sort(sortProxies);
-  console.log(`✅ Online by TCP: ${online.length}`);
+  const candidateLimit = Math.max(CONFIG.maxProxies * CONFIG.candidateMultiplier, CONFIG.maxProxies);
+  const checked = await runPool(unique.slice(0, candidateLimit), checkTcp, CONFIG.checkConcurrency);
+  const online = checked.filter(p => p.status === 'online').map(p => withQuality(p, previousMap)).sort(sortProxies);
+  console.log(`Online by TCP: ${online.length}`);
 
-  let finalProxies = online.slice(0, CONFIG.maxProxies);
-  let success = finalProxies.length > 0;
-  let note = 'Only TCP reachability is checked; Telegram availability may vary by country/operator.';
-
-  if (finalProxies.length < CONFIG.minVerified && CONFIG.keepUnverifiedIfFew) {
-    const existingKeys = new Set(finalProxies.map(p => p.hash));
-    const unverified = unique
-      .filter(p => !existingKeys.has(p.hash))
-      .slice(0, CONFIG.maxProxies - finalProxies.length)
-      .map(p => ({ ...p, status: 'unverified', latencyMs: null, checkedAt: nowIso(), check: 'not-checked' }));
-    finalProxies = [...finalProxies, ...unverified].slice(0, CONFIG.maxProxies);
-    success = finalProxies.length > 0;
-    note = unverified.length
-      ? 'Few TCP-verified proxies were found, so fresh unverified public entries are shown below verified entries.'
-      : 'Only a small number of TCP-verified proxies was found.';
-  }
-
-  if (!finalProxies.length && previous?.proxies?.length) {
-    const previousOnline = previous.proxies.filter(p => p.status === 'online');
-    const previousUsable = CONFIG.keepUnverifiedIfFew ? previous.proxies : previousOnline;
-
-    if (previousUsable.length) {
-      console.warn('⚠️ No fresh verified proxies found. Keeping previous usable cache.');
-      finalProxies = previousUsable.map(p => enrichProxy(p, {
-        status: p.status || 'cached',
-        checkedAt: nowIso(),
-        check: p.check || 'previous-cache'
-      }));
-      success = false;
-      note = CONFIG.keepUnverifiedIfFew
-        ? 'Sources did not return usable proxies; previous cache is kept.'
-        : 'Sources did not return fresh TCP-online proxies; previous online cache is kept.';
-    }
-  }
-
-  if (!finalProxies.length) {
-    success = false;
-    note = 'No usable proxies were found. Check source availability or add your own SOURCE_URLS.';
-  }
-
-  finalProxies = finalProxies.sort(sortProxies).slice(0, CONFIG.maxProxies);
-  finalProxies = finalProxies.map(p => enrichProxy(p));
+  const finalProxies = online.slice(0, CONFIG.maxProxies);
   const newItems = finalProxies.filter(p => p.hash && !prevHashes.has(p.hash));
+  const success = finalProxies.length > 0;
 
   const payload = {
     success,
@@ -596,20 +558,22 @@ async function main() {
     timestamp: nowIso(),
     next_update: nextUpdateIso(),
     timezone: CONFIG.timezone,
-    schedule: '09:17, 13:17, 17:17, 21:17 local time',
+    schedule: 'Every 4 hours via GitHub Actions cron: 17 */4 * * *',
     sourceStats,
-    note,
+    note: success
+      ? 'Dashboard contains only proxies that passed a fresh TCP connect check. Best entries are ranked by latency, source confidence, and previous uptime.'
+      : 'No TCP-online proxies were found in the current provider scan.',
     proxies: finalProxies
   };
 
   writeJson(CONFIG.outputFile, payload);
-  console.log(`💾 Saved ${finalProxies.length} proxies to ${CONFIG.outputFile}`);
+  console.log(`Saved ${finalProxies.length} verified proxies to ${CONFIG.outputFile}`);
 
   await notifyNewProxies(newItems, payload);
-  console.log('🏁 Done');
+  console.log('Done');
 }
 
 main().catch(error => {
-  console.error(`❌ Fatal error: ${error.stack || error.message}`);
+  console.error(`Fatal error: ${error.stack || error.message}`);
   process.exitCode = 1;
 });

@@ -3,25 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#111827" />
   <title>MTProto Proxy Hub</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
     :root {
-      --bg: #070b14;
-      --panel: rgba(15, 23, 42, .72);
-      --panel-strong: rgba(15, 23, 42, .92);
-      --text: #e5edf9;
-      --muted: #91a4c4;
-      --line: rgba(148, 163, 184, .18);
-      --good: #34d399;
-      --warn: #fbbf24;
-      --bad: #fb7185;
-      --brand: #38bdf8;
-      --brand-2: #8b5cf6;
-      --shadow: 0 24px 80px rgba(0,0,0,.38);
-      --radius: 24px;
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-soft: #eef6f2;
+      --ink: #121826;
+      --muted: #5f6b7a;
+      --line: #d9e1ea;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --accent: #2563eb;
+      --good: #15803d;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --shadow: 0 18px 45px rgba(18, 24, 38, .10);
+      --radius: 8px;
     }
 
     * { box-sizing: border-box; }
@@ -29,282 +28,263 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, .24), transparent 34rem),
-        radial-gradient(circle at 85% 0%, rgba(139, 92, 246, .22), transparent 30rem),
-        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .13), transparent 34rem),
-        var(--bg);
-      overflow-x: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: .22;
-      background-image:
-        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(circle at center, black 0, transparent 72%);
-    }
-
-    .wrap {
-      position: relative;
-      width: min(1180px, calc(100% - 32px));
+    .shell {
+      width: min(1180px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 42px 0 54px;
+      padding: 24px 0 42px;
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap: 22px;
-      align-items: stretch;
-      margin-bottom: 22px;
-    }
-
-    .hero-main, .side-panel, .card {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      backdrop-filter: blur(18px);
-      box-shadow: var(--shadow);
-      border-radius: var(--radius);
-    }
-
-    .hero-main {
-      padding: 32px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .hero-main::after {
-      content: "";
-      position: absolute;
-      width: 280px;
-      height: 280px;
-      right: -90px;
-      top: -120px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(56,189,248,.34), rgba(139,92,246,.28));
-      filter: blur(3px);
-      animation: float 7s ease-in-out infinite;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      gap: 8px;
+    .topbar {
+      display: flex;
       align-items: center;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(56,189,248,.28);
-      background: rgba(56,189,248,.11);
-      color: #bae6fd;
-      font-size: 13px;
-      font-weight: 700;
+      justify-content: space-between;
+      gap: 16px;
       margin-bottom: 18px;
     }
 
-    h1 {
-      position: relative;
-      z-index: 1;
-      margin: 0;
-      max-width: 760px;
-      font-size: clamp(34px, 6vw, 66px);
-      line-height: .94;
-      letter-spacing: -.055em;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
     }
 
-    .lead {
-      position: relative;
-      z-index: 1;
-      margin: 20px 0 0;
-      max-width: 760px;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.7;
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      font-weight: 900;
+      letter-spacing: 0;
+      flex: 0 0 auto;
     }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 22px; line-height: 1.2; letter-spacing: 0; }
+    .subtle { color: var(--muted); font-size: 14px; line-height: 1.45; }
 
     .actions {
-      position: relative;
-      z-index: 1;
       display: flex;
+      gap: 10px;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 26px;
+      justify-content: flex-end;
     }
 
     button, .btn {
       appearance: none;
-      border: 0;
-      cursor: pointer;
-      border-radius: 16px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-weight: 800;
-      font-size: 14px;
-      text-decoration: none;
-      transition: transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      min-height: 42px;
+      padding: 10px 13px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 46px;
+      font-size: 14px;
+      font-weight: 750;
+      color: var(--ink);
+      background: var(--surface);
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 1px 0 rgba(18, 24, 38, .06);
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      box-shadow: 0 12px 30px rgba(56, 189, 248, .22);
-    }
+    button:hover, .btn:hover { border-color: #b8c5d5; }
+    button:disabled { opacity: .58; cursor: wait; }
+    .primary { color: #fff; background: var(--brand); border-color: var(--brand); }
+    .primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
+    .blue { color: #fff; background: var(--accent); border-color: var(--accent); }
 
-    .btn-ghost {
-      background: rgba(255,255,255,.055);
-      border: 1px solid var(--line);
-    }
-
-    button:hover, .btn:hover { transform: translateY(-2px); }
-    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    .side-panel {
-      padding: 22px;
+    .dashboard {
       display: grid;
-      gap: 14px;
+      grid-template-columns: 1fr 330px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      min-height: 230px;
+      padding: 24px;
+      display: grid;
+      align-content: space-between;
+      gap: 22px;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, .12), rgba(37, 99, 235, .10)),
+        var(--surface);
+    }
+
+    .hero h2 {
+      max-width: 760px;
+      font-size: clamp(30px, 5vw, 54px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .hero-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .trust {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .side {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
     }
 
     .stat {
-      padding: 18px;
+      padding: 15px;
       border: 1px solid var(--line);
-      border-radius: 20px;
-      background: rgba(255,255,255,.045);
+      border-radius: var(--radius);
+      background: #fbfcfe;
     }
 
     .stat small {
       display: block;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .04em;
       margin-bottom: 8px;
     }
 
     .stat strong {
-      font-size: 28px;
-      letter-spacing: -.035em;
+      display: block;
+      min-height: 32px;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      word-break: break-word;
     }
 
     .toolbar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: end;
       gap: 14px;
-      margin: 24px 0 18px;
+      margin: 22px 0 14px;
     }
 
-    .toolbar h2 {
-      margin: 0;
-      font-size: 24px;
-      letter-spacing: -.035em;
-    }
-
-    .muted { color: var(--muted); }
+    .toolbar h2 { font-size: 22px; line-height: 1.2; }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
+      gap: 14px;
     }
 
     .card {
       position: relative;
-      padding: 18px;
-      min-height: 245px;
+      min-height: 262px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      overflow: hidden;
-      animation: rise .42s ease both;
+      gap: 13px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(18, 24, 38, .07);
     }
 
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(56,189,248,.1), transparent 38%, rgba(139,92,246,.1));
-      opacity: 0;
-      transition: opacity .2s ease;
+    .card.active {
+      border-color: rgba(21, 128, 61, .38);
+      background: linear-gradient(180deg, #ffffff, #f2fbf6);
     }
-
-    .card:hover::before { opacity: 1; }
-    .card > * { position: relative; z-index: 1; }
 
     .card-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .server {
-      min-width: 0;
-    }
-
+    .server { min-width: 0; }
     .server h3 {
-      margin: 0 0 8px;
       font-size: 16px;
       line-height: 1.35;
       word-break: break-all;
+      margin-bottom: 9px;
     }
 
-    .badge-row {
+    .badges {
       display: flex;
+      gap: 7px;
       flex-wrap: wrap;
-      gap: 8px;
     }
 
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 9px;
+      min-height: 28px;
+      padding: 5px 8px;
       border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 800;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.055);
-      color: #cbd5e1;
     }
 
-    .status-online { color: var(--good); border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.09); }
-    .status-unverified { color: var(--warn); border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.09); }
-    .status-offline, .status-cached { color: var(--bad); border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.09); }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: currentColor;
-      box-shadow: 0 0 16px currentColor;
-    }
-
+    .online { color: var(--good); border-color: rgba(21,128,61,.25); background: #ecfdf3; }
+    .active-badge { color: var(--accent); border-color: rgba(37,99,235,.25); background: #eff6ff; }
+    .dot { width: 8px; height: 8px; border-radius: 99px; background: currentColor; }
     .flag {
+      width: 42px;
+      height: 42px;
       flex: 0 0 auto;
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
       display: grid;
       place-items: center;
-      background: rgba(255,255,255,.07);
+      border-radius: var(--radius);
       border: 1px solid var(--line);
-      font-size: 22px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--brand-dark);
     }
 
     .kv {
       display: grid;
-      gap: 9px;
+      gap: 8px;
       color: var(--muted);
       font-size: 13px;
     }
@@ -312,144 +292,222 @@
     .kv div {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      padding-bottom: 9px;
-      border-bottom: 1px solid rgba(148,163,184,.1);
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #edf1f6;
     }
 
     .kv b {
-      color: #dbeafe;
-      font-weight: 700;
+      color: var(--ink);
+      font-weight: 760;
       text-align: right;
-      word-break: break-all;
+      word-break: break-word;
     }
 
     .card-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: 1fr 42px;
+      gap: 9px;
       margin-top: auto;
     }
 
-    .empty, .loader {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      border-radius: var(--radius);
-      padding: 28px;
-      color: var(--muted);
-      text-align: center;
+    .icon-btn {
+      width: 42px;
+      padding: 0;
+      font-size: 17px;
     }
 
-    .loader {
-      min-height: 260px;
+    .empty, .loader {
+      min-height: 240px;
       display: grid;
       place-items: center;
+      text-align: center;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
     }
 
-    .spinner {
-      width: 46px;
-      height: 46px;
-      border-radius: 999px;
-      border: 4px solid rgba(255,255,255,.12);
-      border-top-color: var(--brand);
-      animation: spin .85s linear infinite;
-      margin-bottom: 12px;
+    .progress {
+      width: min(260px, 70vw);
+      height: 8px;
+      border-radius: 99px;
+      background: #e5eaf1;
+      overflow: hidden;
+      margin: 0 auto 14px;
+    }
+
+    .progress span {
+      display: block;
+      width: 45%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--brand);
+    }
+
+    .toast-stack {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(420px, calc(100vw - 32px));
+      display: grid;
+      gap: 10px;
+      z-index: 30;
     }
 
     .toast {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      width: min(410px, calc(100vw - 36px));
-      border-radius: 18px;
-      padding: 14px 16px;
-      border: 1px solid rgba(56,189,248,.28);
-      background: rgba(15,23,42,.94);
-      backdrop-filter: blur(16px);
+      padding: 13px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.96);
       box-shadow: var(--shadow);
-      transform: translateY(18px);
-      opacity: 0;
-      transition: .25s ease;
-      z-index: 20;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .toast.show { transform: translateY(0); opacity: 1; }
+    dialog {
+      width: min(520px, calc(100vw - 28px));
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 70px rgba(18, 24, 38, .24);
+      color: var(--ink);
+      background: var(--surface);
+    }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes float { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(-14px, 18px, 0); } }
+    dialog::backdrop { background: rgba(18, 24, 38, .42); }
+    .modal { padding: 18px; display: grid; gap: 14px; }
+    .modal-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .modal h3 { font-size: 20px; line-height: 1.25; }
+    .modal-actions { display: grid; grid-template-columns: 1fr auto; gap: 9px; }
+    .close { min-height: 34px; width: 34px; padding: 0; }
 
-    @media (max-width: 920px) {
-      .hero { grid-template-columns: 1fr; }
+    @media (prefers-reduced-motion: no-preference) {
+      button, .btn { transition: background-color .16s ease, border-color .16s ease, transform .16s ease; }
+      button:hover, .btn:hover { transform: translateY(-1px); }
+      .progress span { animation: loading 1.15s ease-in-out infinite; }
+      @keyframes loading {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(240%); }
+      }
+    }
+
+    @media (max-width: 940px) {
+      .dashboard { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    @media (max-width: 620px) {
-      .wrap { width: min(100% - 22px, 1180px); padding-top: 22px; }
-      .hero-main, .side-panel, .card { border-radius: 20px; }
-      .hero-main { padding: 22px; }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 20px, 1180px); padding-top: 16px; }
+      .topbar, .toolbar { align-items: stretch; flex-direction: column; }
+      .actions, .hero-row { align-items: stretch; justify-content: stretch; }
+      .actions > button { flex: 1 1 100%; }
+      .hero { padding: 18px; min-height: auto; }
       .grid { grid-template-columns: 1fr; }
-      .toolbar { align-items: flex-start; flex-direction: column; }
-      .actions, .card-actions { grid-template-columns: 1fr; }
-      .btn, button { width: 100%; }
+      .card-actions, .modal-actions { grid-template-columns: 1fr; }
+      .icon-btn, .modal-actions button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <div class="hero-main">
-        <div class="eyebrow">⚡ Auto-updated MTProto list</div>
-        <h1>Рабочие прокси для Telegram на GitHub Pages</h1>
-        <p class="lead">
-          Список обновляется через GitHub Actions, карточки берутся из <b>proxies.json</b>. Кнопка подключения открывает прямую <b>tg://proxy</b>-ссылку, проверка выполняется по TCP‑доступности, а уведомления о новых серверах можно получать через Telegram Bot или Discord webhook.
-        </p>
-        <div class="actions">
-          <button class="btn-primary" id="refreshBtn">↻ Обновить список</button>
-          <button class="btn-ghost" id="notifyBtn">🔔 Включить уведомления в браузере</button>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">TG</div>
+        <div>
+          <h1>MTProto Proxy Hub</h1>
+          <p class="subtle">Проверенные прокси для Telegram Desktop</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="findBtn" type="button"><span aria-hidden="true">⌕</span> Найти прокси</button>
+        <button id="refreshBtn" type="button"><span aria-hidden="true">↻</span> Обновить</button>
+        <button id="notifyBtn" type="button"><span aria-hidden="true">◐</span> Уведомления</button>
+      </div>
+    </header>
+
+    <section class="dashboard">
+      <div class="panel hero">
+        <h2>Только живые MTProto-серверы, без мусора на дашборде</h2>
+        <div class="hero-row">
+          <p class="subtle" id="note">Загрузка данных...</p>
+          <div class="trust">
+            <span class="pill">TCP online</span>
+            <span class="pill">Рейтинг качества</span>
+            <span class="pill">Локальный статус</span>
+          </div>
         </div>
       </div>
 
-      <aside class="side-panel">
+      <aside class="panel side">
         <div class="stat">
-          <small>Серверов на сайте</small>
-          <strong id="count">—</strong>
+          <small>Рабочих</small>
+          <strong id="count">-</strong>
         </div>
         <div class="stat">
-          <small>Последнее обновление</small>
-          <strong id="updated">—</strong>
+          <small>Подключено у вас</small>
+          <strong id="activeCount">-</strong>
+        </div>
+        <div class="stat">
+          <small>Обновлено</small>
+          <strong id="updated">-</strong>
         </div>
         <div class="stat">
           <small>Следующая проверка</small>
-          <strong id="next">—</strong>
+          <strong id="next">-</strong>
         </div>
       </aside>
     </section>
 
     <div class="toolbar">
       <div>
-        <h2>Карточки прокси</h2>
-        <div class="muted" id="note">Загрузка данных…</div>
+        <h2>Серверы</h2>
+        <p class="subtle" id="sourceLine">Источники проверяются GitHub Actions каждые 4 часа</p>
       </div>
     </div>
 
     <section id="content" class="loader">
       <div>
-        <div class="spinner"></div>
-        Загружаю proxies.json…
+        <div class="progress"><span></span></div>
+        Загружаю proxies.json...
       </div>
     </section>
   </main>
 
+  <dialog id="proxyDialog">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3 id="modalTitle">Лучший прокси найден</h3>
+          <p class="subtle" id="modalText"></p>
+        </div>
+        <button class="close" id="closeDialog" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="kv" id="modalMeta"></div>
+      <div class="modal-actions">
+        <button class="primary" id="modalConnect" type="button">Подключить в Telegram Desktop</button>
+        <button id="modalCopy" type="button">Копировать</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
   <script>
     const CONFIG = {
       proxiesUrl: new URL('./proxies.json', location.href).toString(),
-      seenKey: 'mtproto_seen_hashes_v2'
+      activatedKey: 'mtproto_activated_hashes_v4',
+      notificationKey: 'mtproto_last_snapshot_v4'
     };
 
     const state = {
       data: null,
-      isLoading: false
+      proxies: [],
+      isLoading: false,
+      selectedProxy: null
     };
 
     const $ = selector => document.querySelector(selector);
@@ -463,26 +521,41 @@
     }
 
     function fmtDate(value) {
-      if (!value) return '—';
+      if (!value) return '-';
       const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '—';
+      if (Number.isNaN(date.getTime())) return '-';
       return date.toLocaleString('ru-RU', {
         day: '2-digit', month: '2-digit', year: '2-digit',
         hour: '2-digit', minute: '2-digit'
       });
     }
 
-    function statusLabel(status) {
-      if (status === 'online') return 'online';
-      if (status === 'unverified') return 'свежий, не проверен';
-      if (status === 'cached') return 'кэш';
-      return status || 'unknown';
-    }
-
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>'"]/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
       }[char]));
+    }
+
+    function safeStatus(status) {
+      return status === 'online' ? 'online' : 'offline';
+    }
+
+    function getActivated() {
+      try { return new Set(JSON.parse(localStorage.getItem(CONFIG.activatedKey) || '[]')); }
+      catch { return new Set(); }
+    }
+
+    function saveActivated(items) {
+      try { localStorage.setItem(CONFIG.activatedKey, JSON.stringify([...items])); }
+      catch {}
+    }
+
+    function markActivated(hash) {
+      if (!hash) return;
+      const activated = getActivated();
+      activated.add(hash);
+      saveActivated(activated);
+      render(state.data);
     }
 
     function buildTelegramUrl(p) {
@@ -495,161 +568,196 @@
       return `tg://proxy?${params.toString()}`;
     }
 
-    function buildTelegramWebUrl(p, tgUrl) {
-      if (p.webUrl && p.webUrl.startsWith('https://t.me/proxy?')) return p.webUrl;
-      try {
-        const params = new URL(tgUrl).searchParams;
-        return `https://t.me/proxy?${params.toString()}`;
-      } catch {
-        return 'https://t.me/proxy';
-      }
-    }
-
-    function connectTelegram(tgUrl) {
-      if (!tgUrl) {
-        toast('Не удалось сформировать ссылку подключения');
-        return;
-      }
-
-      try { navigator.clipboard?.writeText(tgUrl).catch(() => {}); } catch {}
-      toast('Открываю Telegram… Если окно не появилось, ссылка уже скопирована.');
-      window.location.href = tgUrl;
-
-      window.setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          toast('Telegram не открылся? Используй кнопку «Копировать» или открой t.me-ссылку вручную.');
-        }
-      }, 1400);
-    }
-
-    function getSeen() {
-      try { return new Set(JSON.parse(localStorage.getItem(CONFIG.seenKey) || '[]')); }
-      catch { return new Set(); }
-    }
-
-    function saveSeen(seen) {
-      try { localStorage.setItem(CONFIG.seenKey, JSON.stringify([...seen])); }
-      catch {}
-    }
-
-    function toast(message) {
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.textContent = message;
-      document.body.appendChild(el);
-      requestAnimationFrame(() => el.classList.add('show'));
-      setTimeout(() => el.remove(), 6500);
-    }
-
-    function browserNotify(title, body) {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      try { new Notification(title, { body, icon: '' }); } catch {}
-    }
-
-    function detectNew(proxies) {
-      const seen = getSeen();
-      const fresh = proxies.filter(p => p.hash && !seen.has(p.hash));
-      proxies.forEach(p => p.hash && seen.add(p.hash));
-      saveSeen(seen);
-
-      if (fresh.length && seen.size > fresh.length) {
-        const msg = `Появилось ${fresh.length} ${plural(fresh.length, 'новый сервер', 'новых сервера', 'новых серверов')}`;
-        toast(`🔥 ${msg}`);
-        browserNotify('Новые MTProto прокси', msg);
-      }
-    }
-
     async function copyText(text) {
       try {
         await navigator.clipboard.writeText(text);
         toast('Ссылка скопирована');
       } catch {
-        prompt('Скопируй ссылку вручную:', text);
+        window.prompt('Скопируй ссылку вручную:', text);
       }
     }
 
-    function cardTemplate(p, index) {
-      const status = p.status || 'unknown';
-      const latency = p.latencyMs ? `${p.latencyMs} ms` : '—';
-      const source = p.source || 'unknown';
-      const tgUrl = buildTelegramUrl(p);
-      const webUrl = buildTelegramWebUrl(p, tgUrl);
-      const safeRaw = escapeHtml(tgUrl);
-      const safeWeb = escapeHtml(webUrl);
+    function connectProxy(proxy) {
+      if (!proxy) return;
+      const tgUrl = buildTelegramUrl(proxy);
+      markActivated(proxy.hash);
+      copyText(tgUrl);
+      toast('Открываю Telegram Desktop. Если системное окно не появилось, ссылка уже в буфере обмена.');
+      window.location.assign(tgUrl);
+    }
 
+    function scoreText(p) {
+      const latency = p.latencyMs ? `${p.latencyMs} ms` : '-';
+      const score = Number.isFinite(Number(p.score)) ? p.score : '-';
+      return `${latency} / рейтинг ${score}`;
+    }
+
+    function sortForDashboard(items) {
+      const activated = getActivated();
+      return [...items].sort((a, b) => {
+        const activeDelta = Number(activated.has(b.hash)) - Number(activated.has(a.hash));
+        if (activeDelta) return activeDelta;
+        if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+        return (a.latencyMs ?? 999999) - (b.latencyMs ?? 999999);
+      });
+    }
+
+    function cardTemplate(p) {
+      const activated = getActivated().has(p.hash);
+      const tgUrl = escapeHtml(buildTelegramUrl(p));
       return `
-        <article class="card" style="animation-delay:${Math.min(index * 45, 450)}ms">
+        <article class="card ${activated ? 'active' : ''}" data-hash="${escapeHtml(p.hash || '')}">
           <div class="card-top">
             <div class="server">
               <h3>${escapeHtml(p.server)}:${escapeHtml(p.port)}</h3>
-              <div class="badge-row">
-                <span class="badge status-${escapeHtml(status)}"><span class="status-dot"></span>${escapeHtml(statusLabel(status))}</span>
+              <div class="badges">
+                <span class="badge online"><span class="dot"></span>online</span>
+                ${activated ? '<span class="badge active-badge">подключено у вас</span>' : ''}
                 <span class="badge">${escapeHtml(p.type || 'MTProto')}</span>
               </div>
             </div>
-            <div class="flag">${escapeHtml(p.flag || '🌐')}</div>
+            <div class="flag" title="Регион">${escapeHtml(p.flag || 'GL')}</div>
           </div>
 
           <div class="kv">
-            <div><span>Задержка TCP</span><b>${escapeHtml(latency)}</b></div>
-            <div><span>Источник</span><b>${escapeHtml(source)}</b></div>
-            <div><span>Добавлен</span><b>${escapeHtml(fmtDate(p.fetchedAt))}</b></div>
+            <div><span>Качество</span><b>${escapeHtml(scoreText(p))}</b></div>
+            <div><span>Источники</span><b>${escapeHtml(p.sourceCount || (p.sources?.length || 1))}</b></div>
+            <div><span>Поставщик</span><b>${escapeHtml(p.source || 'unknown')}</b></div>
             <div><span>Проверен</span><b>${escapeHtml(fmtDate(p.checkedAt))}</b></div>
           </div>
 
           <div class="card-actions">
-            <button class="btn-primary" data-connect="${safeRaw}" data-web="${safeWeb}">Подключить в Telegram</button>
-            <button class="btn-ghost" data-copy="${safeRaw}">Копировать</button>
+            <button class="primary" data-connect="${escapeHtml(p.hash || '')}" type="button">
+              ${activated ? 'Подключить снова' : 'Подключить в Telegram Desktop'}
+            </button>
+            <button class="icon-btn" data-copy="${tgUrl}" type="button" title="Копировать ссылку" aria-label="Копировать ссылку">⧉</button>
           </div>
         </article>`;
     }
 
     function render(data) {
-      $('#count').textContent = data.count ?? 0;
-      $('#updated').textContent = fmtDate(data.timestamp);
-      $('#next').textContent = fmtDate(data.next_update);
-      $('#note').textContent = data.note || 'Список загружен.';
+      state.data = data || {};
+      const sourceProxies = Array.isArray(state.data.proxies) ? state.data.proxies : [];
+      state.proxies = sortForDashboard(sourceProxies.filter(p => safeStatus(p.status) === 'online'));
+      const activated = getActivated();
+      const activeCount = state.proxies.filter(p => activated.has(p.hash)).length;
 
-      const proxies = Array.isArray(data.proxies) ? data.proxies : [];
-      if (!proxies.length) {
+      $('#count').textContent = state.proxies.length;
+      $('#activeCount').textContent = activeCount;
+      $('#updated').textContent = fmtDate(state.data.timestamp);
+      $('#next').textContent = fmtDate(state.data.next_update);
+      $('#note').textContent = state.data.note || 'Показаны только серверы, которые прошли проверку доступности.';
+
+      const okSources = (state.data.sourceStats || []).filter(s => s.ok).length;
+      const allSources = (state.data.sourceStats || []).length;
+      $('#sourceLine').textContent = allSources
+        ? `Источники: ${okSources}/${allSources} доступны. Автообновление каждые 4 часа.`
+        : 'Автообновление каждые 4 часа.';
+
+      if (!state.proxies.length) {
         $('#content').className = 'empty';
-        $('#content').innerHTML = 'Пока нет доступных прокси. Проверь Actions или источники в fetch-proxies.js.';
+        $('#content').innerHTML = 'Сейчас нет серверов, прошедших свежую TCP-проверку. Дашборд не показывает непроверенный мусор.';
         return;
       }
 
       $('#content').className = 'grid';
-      $('#content').innerHTML = proxies.map(cardTemplate).join('');
+      $('#content').innerHTML = state.proxies.map(cardTemplate).join('');
       $('#content').querySelectorAll('[data-connect]').forEach(btn => {
-        btn.addEventListener('click', () => connectTelegram(btn.dataset.connect));
+        btn.addEventListener('click', () => {
+          const proxy = state.proxies.find(p => p.hash === btn.dataset.connect);
+          connectProxy(proxy);
+        });
       });
       $('#content').querySelectorAll('[data-copy]').forEach(btn => {
         btn.addEventListener('click', () => copyText(btn.dataset.copy));
       });
     }
 
-    async function loadProxies() {
-      if (state.isLoading) return;
+    function toast(message) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = message;
+      $('#toastStack').appendChild(el);
+      setTimeout(() => el.remove(), 6200);
+    }
+
+    function browserNotify(title, body) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      try { new Notification(title, { body }); } catch {}
+    }
+
+    function handleNewData(data) {
+      const proxies = Array.isArray(data.proxies) ? data.proxies.filter(p => p.status === 'online') : [];
+      const hashes = proxies.map(p => p.hash).filter(Boolean);
+      let previous = null;
+      try { previous = JSON.parse(localStorage.getItem(CONFIG.notificationKey) || 'null'); } catch {}
+
+      localStorage.setItem(CONFIG.notificationKey, JSON.stringify({
+        timestamp: data.timestamp,
+        hashes
+      }));
+
+      if (!previous || previous.timestamp === data.timestamp) return;
+
+      const oldHashes = new Set(previous.hashes || []);
+      const fresh = hashes.filter(hash => !oldHashes.has(hash));
+      if (!fresh.length) return;
+
+      const message = `Найдено ${fresh.length} ${plural(fresh.length, 'новый рабочий сервер', 'новых рабочих сервера', 'новых рабочих серверов')}`;
+      toast(message);
+      browserNotify('MTProto Proxy Hub', message);
+    }
+
+    async function loadProxies(showToast = false) {
+      if (state.isLoading) return state.data;
       state.isLoading = true;
       $('#refreshBtn').disabled = true;
+      $('#findBtn').disabled = true;
 
       try {
-        const res = await fetch(CONFIG.proxiesUrl, { cache: 'no-store' });
+        const res = await fetch(`${CONFIG.proxiesUrl}?t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        state.data = data;
         render(data);
-        detectNew(data.proxies || []);
+        handleNewData(data);
+        if (showToast) toast('Список обновлён');
+        return data;
       } catch (error) {
         $('#content').className = 'empty';
         $('#content').innerHTML = `Не получилось загрузить proxies.json: <b>${escapeHtml(error.message)}</b>`;
-        toast('Не получилось загрузить список');
+        toast('Не получилось загрузить список прокси');
+        return null;
       } finally {
         state.isLoading = false;
         $('#refreshBtn').disabled = false;
+        $('#findBtn').disabled = false;
       }
     }
 
-    $('#refreshBtn').addEventListener('click', loadProxies);
+    function openBestProxy() {
+      const activated = getActivated();
+      const candidate = state.proxies.find(p => !activated.has(p.hash)) || state.proxies[0];
+      if (!candidate) {
+        toast('Сейчас нет проверенных рабочих прокси');
+        return;
+      }
+
+      state.selectedProxy = candidate;
+      $('#modalTitle').textContent = activated.has(candidate.hash) ? 'Лучший прокси уже подключён' : 'Лучший прокси найден';
+      $('#modalText').textContent = `${candidate.server}:${candidate.port}`;
+      $('#modalMeta').innerHTML = `
+        <div><span>Качество</span><b>${escapeHtml(scoreText(candidate))}</b></div>
+        <div><span>Источник</span><b>${escapeHtml(candidate.source || 'unknown')}</b></div>
+        <div><span>Проверен</span><b>${escapeHtml(fmtDate(candidate.checkedAt))}</b></div>
+      `;
+      $('#proxyDialog').showModal();
+    }
+
+    $('#refreshBtn').addEventListener('click', () => loadProxies(true));
+    $('#findBtn').addEventListener('click', async () => {
+      await loadProxies(false);
+      openBestProxy();
+    });
     $('#notifyBtn').addEventListener('click', async () => {
       if (!('Notification' in window)) {
         toast('Браузерные уведомления здесь не поддерживаются');
@@ -658,9 +766,17 @@
       const permission = await Notification.requestPermission();
       toast(permission === 'granted' ? 'Уведомления включены' : 'Уведомления не включены');
     });
+    $('#closeDialog').addEventListener('click', () => $('#proxyDialog').close());
+    $('#modalConnect').addEventListener('click', () => {
+      connectProxy(state.selectedProxy);
+      $('#proxyDialog').close();
+    });
+    $('#modalCopy').addEventListener('click', () => {
+      if (state.selectedProxy) copyText(buildTelegramUrl(state.selectedProxy));
+    });
 
-    loadProxies();
-    setInterval(loadProxies, 10 * 60 * 1000);
+    loadProxies(false);
+    setInterval(() => loadProxies(false), 10 * 60 * 1000);
   </script>
 </body>
 </html>
